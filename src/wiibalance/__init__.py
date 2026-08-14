@@ -1,3 +1,3 @@
-from .board import BalanceBoard
+from .board import BalanceBoard, Weights
 
-__all__ = ["BalanceBoard"]
+__all__ = ["BalanceBoard", "Weights"]
