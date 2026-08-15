@@ -14,10 +14,10 @@ TYPE_DATA = 0x32
 PSM_SEND = 0x11
 PSM_RECV = 0x13
 
-POSITION_TOPRIGHT = 3
+POSITION_TOPRIGHT = 0
 POSITION_TOPLEFT = 2
 POSITION_BOTTOMRIGHT = 1
-POSITION_BOTTOMLEFT = 0
+POSITION_BOTTOMLEFT = 3
 
 class BoardNotFoundError(Exception):
     pass
@@ -28,7 +28,7 @@ class DaemonNotRunningError(Exception):
 class PlatformNotSupportedError(Exception):
     pass
 
-@dataclass
+@dataclass(kw_only=True)
 class Weights:
     topright: float
     topleft: float

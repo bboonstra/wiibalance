@@ -27,8 +27,14 @@ class _DirectBalanceBoard:
         self.calibration_completed = [False, False]
 
         self._weights = Weights(
-            -1, -1, -1, -1,
-            -1, -1, -1, -1
+            topright=-1,
+            topleft=-1,
+            bottomright=-1,
+            bottomleft=-1,
+            raw_topright=-1,
+            raw_topleft=-1,
+            raw_bottomright=-1,
+            raw_bottomleft=-1,
         )
 
         self._button = False
