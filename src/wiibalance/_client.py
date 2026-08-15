@@ -45,6 +45,10 @@ class _DaemonBalanceBoard:
     def connected(self) -> bool:
         return self._send_command("GET_STATE")["connected"]
 
+    @property
+    def led(self) -> bool:
+        return self._send_command("GET_STATE")["led"]
+
     def toggle_led(self) -> None:
         self._send_command("TOGGLE_LED")
 

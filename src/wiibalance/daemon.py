@@ -39,6 +39,7 @@ class WiiBalanceDaemon:
                     response = {
                         "weights": self.board.weights.to_dict(),
                         "button": self.board.button,
+                        "led": self.board.led,
                         "battery": self.board.battery,
                         "connected": self.board.connected
                     }
