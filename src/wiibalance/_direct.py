@@ -361,7 +361,7 @@ class DirectBalanceBoard(BalanceBoard):
                 print(f"Balance Board error: {exc}")
 
     def read_state(self) -> BoardState:
-        if self.battery == 0 and self._weights.total == 0:
+        if self.battery == 0 and self._weights.total <= 0.01:
             raise CriticallyLowBatteryError(
                 "Your Wii Balance Board is critically low on battery and cannot provide valid weight data. Please replace the batteries.")
 

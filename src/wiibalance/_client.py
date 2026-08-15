@@ -25,6 +25,8 @@ class _DaemonBalanceBoard(BalanceBoard):
 
     def read_state(self) -> BoardState:
         data = self._send_command("GET_STATE")
+        if "error" in data:
+            raise RuntimeError(f"Daemon error: {data['error']}")
         return BoardState(
             weights=Weights(**data["weights"]),
             button=data["button"],
