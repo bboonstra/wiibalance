@@ -86,9 +86,8 @@ def main():
     subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
     subparsers.add_parser("cop", parents=[shared_parser], help="Read current center of pressure")
     subparsers.add_parser("led", parents=[shared_parser], help="Toggle the board LED")
-    live_parser = subparsers.add_parser("live", help="Stream live stats from the board")
+    live_parser = subparsers.add_parser("live", parents=[shared_parser], help="Stream live stats from the board")
     live_parser.add_argument("--json", action="store_true", help="Output stream as JSON lines")
-
     args = parser.parse_args()
 
     if not sys.platform.startswith('linux'):
