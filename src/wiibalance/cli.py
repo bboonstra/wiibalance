@@ -127,7 +127,7 @@ def main():
             board = BalanceBoard(address=args.address, use_daemon=args.daemon)
             while True:
                 weights = board.weights
-                cop_x, cop_y = weights.cop
+                cop_x, cop_y = weights.center_of_pressure
 
                 if args.json:
                     data = {
@@ -136,8 +136,8 @@ def main():
                         "topright": round(weights.topright, 2),
                         "bottomleft": round(weights.bottomleft, 2),
                         "bottomright": round(weights.bottomright, 2),
-                        "cop_x": cop_x,
-                        "cop_y": cop_y,
+                        "center_of_pressure_x": cop_x,
+                        "center_of_pressure_y": cop_y,
                         "button": board.button,
                         "battery": board.battery
                     }
