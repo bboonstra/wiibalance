@@ -35,4 +35,4 @@ def BalanceBoard(address: str | None = None, use_daemon: bool | None = None):
         return _DirectBalanceBoard(address=target_address)
 
 # Expose these to users who import wiibalance
-__all__ = ["BalanceBoard", "Weights", "BoardNotFoundError", "DaemonNotRunningError"]
+__all__ = ["BalanceBoard", "Weights", "BoardNotFoundError", "DaemonNotRunningError", "PlatformNotSupportedError"]

@@ -9,7 +9,8 @@ class _DaemonBalanceBoard:
         # We ping the server on init to ensure it's alive
         self._send_command("GET_STATE")
 
-    def _send_command(self, command: str) -> dict:
+    @staticmethod
+    def _send_command(command: str) -> dict:
         try:
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
                 client.connect(SOCKET_PATH)

@@ -57,7 +57,7 @@ class Weights:
         total = self.total
 
         if total <= 0:
-            return (0.0, 0.0)
+            return 0.0, 0.0
 
         left = self.topleft + self.bottomleft
         right = self.topright + self.bottomright
@@ -68,7 +68,7 @@ class Weights:
         x = (right - left) / total
         y = (top - bottom) / total
 
-        return (x, y)
+        return x, y
 
     @property
     def total(self) -> float:
