@@ -60,6 +60,9 @@ class DaemonNotRunningError(Exception):
 class PlatformNotSupportedError(Exception):
     pass
 
+class CriticallyLowBatteryError(Exception):
+    pass
+
 
 @dataclass(kw_only=True)
 class Weights:

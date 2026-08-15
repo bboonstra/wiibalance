@@ -73,7 +73,7 @@ def main():
         try:
             board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
-            print(f"Total Weight: {state.weights.total:.2f}")
+            print(f"{state.weights.total:.2f}{"lb" if load_config().get('units') == 'imperial' else 'kg'}")
         except Exception as e:
             print(f"Error: {e}")
 

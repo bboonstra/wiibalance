@@ -5,7 +5,7 @@ import subprocess
 import threading
 from pathlib import Path
 
-from .config import load_config, write_config
+from .config import load_config, write_config, CriticallyLowBatteryError
 from ._direct import DirectBalanceBoard
 from .config import CONFIG_DIR
 
@@ -36,16 +36,19 @@ class WiiBalanceDaemon:
                 command = request.get("cmd")
 
                 if command == "GET_STATE":
-                    state = self.board.read_state()
-                    response = {
-                        "weights": state.weights.to_dict(),
-                        "button": state.button,
-                        "led": state.led,
-                        "connected": state.connected,
-                        "battery_raw": state.battery_raw,
-                        "temperature_raw": state.temperature_raw,
-                        "reference_temperature": state.reference_temperature,
-                    }
+                    try:
+                        state = self.board.read_state()
+                        response = {
+                            "weights": state.weights.to_dict(),
+                            "button": state.button,
+                            "led": state.led,
+                            "connected": state.connected,
+                            "battery_raw": state.battery_raw,
+                            "temperature_raw": state.temperature_raw,
+                            "reference_temperature": state.reference_temperature,
+                        }
+                    except CriticallyLowBatteryError as e:
+                        response = {"error": str(e)}
                     conn.sendall(json.dumps(response).encode())
 
                 elif command == "LED_ON":

@@ -19,7 +19,7 @@ from .config import (
     TYPE_DATA,
     TYPE_STATUS,
     BoardNotFoundError,
-    Weights, COMMAND_TEMP_CALIBRATION,
+    Weights, COMMAND_TEMP_CALIBRATION, CriticallyLowBatteryError,
 )
 from .state import BoardState, BalanceBoard
 
@@ -282,7 +282,7 @@ class DirectBalanceBoard(BalanceBoard):
         if load_config().get('units') == 'imperial':
             values = [v * 2.20462 for v in values]
 
-        return Weights(
+        w = Weights(
             top_right=values[POSITION_TOP_RIGHT],
             top_left=values[POSITION_TOP_LEFT],
             bottom_right=values[POSITION_BOTTOM_RIGHT],
@@ -292,6 +292,8 @@ class DirectBalanceBoard(BalanceBoard):
             raw_bottom_right=raw[POSITION_BOTTOM_RIGHT],
             raw_bottom_left=raw[POSITION_BOTTOM_LEFT],
         )
+
+        return w
 
     # ---------------------------------------------------------------
     # Public state
@@ -359,12 +361,16 @@ class DirectBalanceBoard(BalanceBoard):
                 print(f"Balance Board error: {exc}")
 
     def read_state(self) -> BoardState:
+        if self.battery == 0 and self._weights.total == 0:
+            raise CriticallyLowBatteryError(
+                "Your Wii Balance Board is critically low on battery and cannot provide valid weight data. Please replace the batteries.")
+
         return BoardState(
-            weights=self._weights,
-            button=self._button,
-            led=self.led,
-            connected=self.connected,
-            battery_raw=self._battery,
-            temperature_raw=self._temperature,
-            reference_temperature=self.reference_temperature,
-        )
+                    weights=self._weights,
+                    button=self._button,
+                    led=self.led,
+                    connected=self.connected,
+                    battery_raw=self._battery,
+                    temperature_raw=self._temperature,
+                    reference_temperature=self.reference_temperature,
+                )
