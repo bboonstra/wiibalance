@@ -1,5 +1,22 @@
 import sys
 from collections import deque
+import re
+
+_ANSI_RE = re.compile(r"\033\[[0-9;]*m")
+
+
+def visible_len(s: str) -> int:
+    return len(_ANSI_RE.sub("", s))
+
+
+def center_visible(s: str, width: int) -> str:
+    pad = width - visible_len(s)
+    if pad <= 0:
+        return s
+    left = pad // 2
+    right = pad - left
+    return (" " * left) + s + (" " * right)
+
 
 class C:
     RESET = "\033[0m"
@@ -137,7 +154,8 @@ class LiveDisplay:
             f"│{'[FRONT]'.center(44)}│\033[K",
         ]
         for row in grid:
-            body.append(f"│{(' '.join(row)).center(44)}│\033[K")
+            row_str = ' '.join(row)
+            body.append(f"│{center_visible(row_str, 44)}│\033[K")
         body.append(f"│{'[BACK]'.center(44)}│\033[K")
         body.append(f"└────────────────────────────────────────────┘\033[K")
         body.append(f"  {C.GREY}(Press Ctrl+C to exit){C.RESET}\033[K")
