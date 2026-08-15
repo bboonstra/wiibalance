@@ -127,12 +127,12 @@ def main():
                 if args.json:
                     # UNCHANGED shape/keys — stays compatible with existing consumers
                     data = {
-                        "raw": round(weights.total, 2),
-                        "compensated": round(state.calibrated_weight, 2),
-                        "top_left": round(weights.top_left, 2),
-                        "top_right": round(weights.top_right, 2),
-                        "bottom_left": round(weights.bottom_left, 2),
-                        "bottom_right": round(weights.bottom_right, 2),
+                        "raw": weights.total,
+                        "compensated": state.calibrated_weight,
+                        "top_left": weights.top_left,
+                        "top_right": weights.top_right,
+                        "bottom_left": weights.bottom_left,
+                        "bottom_right": weights.bottom_right,
                         "center_of_pressure_x": cop_x,
                         "center_of_pressure_y": cop_y,
                         "button": state.button,
