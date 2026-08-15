@@ -6,9 +6,9 @@ from wiibalance._direct import _DirectBalanceBoard
 
 SOCKET_PATH = "/tmp/wiibalance.sock"
 
+
 class WiiBalanceDaemon:
     def __init__(self):
-        print("Initializing Bluetooth connection...")
         self.board = _DirectBalanceBoard()
 
         self.server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -17,7 +17,7 @@ class WiiBalanceDaemon:
             os.remove(SOCKET_PATH)
 
         self.server.bind(SOCKET_PATH)
-        os.chmod(SOCKET_PATH, 0o666) # Allow all local users to interact
+        os.chmod(SOCKET_PATH, 0o666)
         self.server.listen(5)
 
     def handle_client(self, conn):
@@ -65,6 +65,7 @@ class WiiBalanceDaemon:
             print("Shutting down daemon...")
             self.board.disconnect()
             os.remove(SOCKET_PATH)
+
 
 if __name__ == "__main__":
     WiiBalanceDaemon().run()

@@ -33,6 +33,7 @@ class _DirectBalanceBoard:
 
         self._button = False
         self._stop = threading.Event()
+        self._first_packet_received = threading.Event()
 
         self.connect()
         self.initialize()
@@ -42,6 +43,10 @@ class _DirectBalanceBoard:
             daemon=True,
         )
         self.worker_thread.start()
+
+        if not self._first_packet_received.wait(timeout=timeout):
+            self.disconnect()
+            raise RuntimeError(f"Connected to {DEVICE_NAME}, but timed out waiting for data packets.")
 
     # ---------------------------------------------------------------
     # Bluetooth
@@ -141,6 +146,10 @@ class _DirectBalanceBoard:
         for _ in range(10):
             packet = self.receive()
             self._process_initial_packet(packet)
+
+    def _wait_for_data(self, timeout: float = 5.0) -> bool:
+        """Blocks until the first valid weight packet is received from the board."""
+        return self._first_packet_received.wait(timeout=timeout)
 
     def _process_initial_packet(self, packet: bytes) -> None:
         if len(packet) < 2:
@@ -319,6 +328,9 @@ class _DirectBalanceBoard:
                         self._button = bool(
                             packet[3] & 0x08
                         )
+
+                    if not self._first_packet_received.is_set():
+                        self._first_packet_received.set()
 
             except OSError:
                 if not self._stop.is_set():
