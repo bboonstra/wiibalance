@@ -81,6 +81,7 @@ def main():
 
     # Interaction commands (inherits shared_parser so -a/--address and daemon flags work here too)
     subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
+    subparsers.add_parser("cop", parents=[shared_parser], help="Read current center of pressure")
     subparsers.add_parser("led", parents=[shared_parser], help="Toggle the board LED")
 
     args = parser.parse_args()
