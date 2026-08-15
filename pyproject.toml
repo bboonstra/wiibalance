@@ -4,15 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wiibalance"
-version = "0.1.0"
+version = "1.0.0"
 description = "Modern Python interface and CLI for the Nintendo Wii Balance Board"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [{ name = "Ben Boonstra", email = "ben@bboonstra.dev" }]
-keywords = ["wii", "balance-board", "bluetooth", "bluez", "l2cap"]
+keywords = ["wii", "balance-board", "bluetooth", "nintendo"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
