@@ -66,22 +66,22 @@ WantedBy=default.target
 def main():
     parser = argparse.ArgumentParser(prog="wiibalance", description="Wii Balance Board CLI")
 
+    # Shared parser for global flags like address and daemon control
     shared_parser = argparse.ArgumentParser(add_help=False)
-    daemon_group = parser.add_mutually_exclusive_group()
+    daemon_group = shared_parser.add_mutually_exclusive_group()
     daemon_group.add_argument("--daemon", action="store_true", default=None, help="Force daemon mode")
     daemon_group.add_argument("--no-daemon", action="store_false", dest="daemon", help="Force direct Bluetooth mode")
     shared_parser.add_argument("-a", "--address", type=str, default=None, help="Bluetooth MAC address of the Wii Balance Board")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # Service commands
-    service_parser = subparsers.add_parser("service", help="Manage the background daemon")
+    # Service commands (inherits shared_parser so -a/--address and daemon flags work)
+    service_parser = subparsers.add_parser("service", parents=[shared_parser], help="Manage the background daemon")
     service_parser.add_argument("action", choices=["setup", "status"])
-    service_parser.add_argument("-address", help="Bluetooth address of the board")
 
-    # Interaction commands
-    subparsers.add_parser("weight", help="Read current total weight")
-    subparsers.add_parser("led", help="Toggle the board LED")
+    # Interaction commands (inherits shared_parser so -a/--address and daemon flags work here too)
+    subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
+    subparsers.add_parser("led", parents=[shared_parser], help="Toggle the board LED")
 
     args = parser.parse_args()
 
