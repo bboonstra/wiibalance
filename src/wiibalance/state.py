@@ -34,20 +34,20 @@ class BoardState:
         return self.battery_bars * 25
 
     @property
-    def compensated_weight(self) -> float | None:
-        """Wii Fit's own temperature compensation. None until reference_temperature is known."""
+    def calibrated_weight(self):
+        """Wii Fit's own temperature compensation. -1 until reference_temperature is known."""
         if self.reference_temperature is None:
-            return None
-        return (
-            0.999
-            * self.weights.total
-            * (1.0 - 0.0007 * (self.temperature_raw - self.reference_temperature))
-        )
+            return -1
+        return 0.999 * self.weights.total * (1.0 - 0.0007 * (self.temperature_raw - self.reference_temperature))
 
 
 class BalanceBoard(Protocol):
     def read_state(self) -> BoardState: ...
+
     def led_on(self) -> None: ...
+
     def led_off(self) -> None: ...
+
     def toggle_led(self) -> None: ...
+
     def disconnect(self) -> None: ...

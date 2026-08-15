@@ -2,6 +2,9 @@ import sys
 from collections import deque
 import re
 
+from .config import load_config
+from wiibalance.state import BoardState
+
 _ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
 
@@ -125,32 +128,34 @@ class LiveDisplay:
             return f"{C.BR_YELLOW}shifty{C.RESET}"
         return f"{C.BR_RED}wobbly{C.RESET}"
 
-    def render(self, weights, cop_x, cop_y, button, battery_pct):
-        self.weight_history.append(weights.total or 0.0)
+    def render(self, state: BoardState):
+        self.weight_history.append(state.calibrated_weight or 0.0)
+        cop_x, cop_y = state.weights.center_of_pressure
         self.cop_trail.append((cop_x, cop_y))
 
         grid = self._grid(cop_x, cop_y)
         spark = sparkline(self.weight_history, width=20)
-        max_quad = max(weights.topleft, weights.topright,
-                       weights.bottomleft, weights.bottomright, 1.0)
-        btn = f"{C.BR_YELLOW}{C.BOLD}PRESSED{C.RESET}" if button else f"{C.GREY}up{C.RESET}     "
+        max_quad = max(state.weights.top_left, state.weights.top_right,
+                       state.weights.bottom_left, state.weights.bottom_right, 1.0)
+        btn = f"{C.BR_YELLOW}{C.BOLD}PRESSED{C.RESET}" if state.button else f"{C.GREY}up{C.RESET}     "
+        weight_unit = "kg" if load_config().get('units') == 'metric' else 'lbs'
 
         body = [
             f"┌────────────────────────────────────────────┐\033[K",
-            f"│ {C.BOLD}Weight{C.RESET} {weights.total:7.2f} kg   "
+            f"│ {C.BOLD}Weight{C.RESET} {state.calibrated_weight:7.2f} {weight_unit}   "
             f"{C.GREY}[{spark}]{C.RESET} │\033[K",
             f"│ CoP  x{C.CYAN}{cop_x:+5.2f}{C.RESET} "
             f"y{C.CYAN}{cop_y:+5.2f}{C.RESET}   "
             f"Stability: {self._stability_label()}     │\033[K",
-            f"│ Battery {battery_bar(battery_pct)} {min(battery_pct, 100):3d}%   "
+            f"│ Battery {battery_bar(state.battery_percent)} {min(state.battery_percent, 100):3d}%   "
             f"Button: {btn}  │\033[K",
             f"├────────────────────────────────────────────┤\033[K",
-            f"│ TL {quadrant_heat(weights.topleft, max_quad)}  "
-            f"TR {quadrant_heat(weights.topright, max_quad)}"
-            f"   {weights.topleft:5.1f}kg {weights.topright:5.1f}kg     │\033[K",
-            f"│ BL {quadrant_heat(weights.bottomleft, max_quad)}  "
-            f"BR {quadrant_heat(weights.bottomright, max_quad)}"
-            f"   {weights.bottomleft:5.1f}kg {weights.bottomright:5.1f}kg     │\033[K",
+            f"│ TL {quadrant_heat(state.weights.top_left, max_quad)}  "
+            f"TR {quadrant_heat(state.weights.top_right, max_quad)}"
+            f"   {state.weights.top_left:5.1f}{weight_unit} {state.weights.top_right:5.1f}{weight_unit}     │\033[K",
+            f"│ BL {quadrant_heat(state.weights.bottom_left, max_quad)}  "
+            f"BR {quadrant_heat(state.weights.bottom_right, max_quad)}"
+            f"   {state.weights.bottom_left:5.1f}{weight_unit} {state.weights.bottom_right:5.1f}{weight_unit}     │\033[K",
             f"├────────────────────────────────────────────┤\033[K",
             f"│{'[FRONT]'.center(44)}│\033[K",
         ]

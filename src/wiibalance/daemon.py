@@ -5,8 +5,8 @@ import subprocess
 import threading
 from pathlib import Path
 
-from .config import CONFIG_PATH, load_config
-from ._direct import _DirectBalanceBoard
+from .config import load_config, write_config
+from ._direct import DirectBalanceBoard
 from .config import CONFIG_DIR
 
 SOCKET_PATH = "/tmp/wiibalance.sock"
@@ -14,7 +14,7 @@ SOCKET_PATH = "/tmp/wiibalance.sock"
 
 class WiiBalanceDaemon:
     def __init__(self):
-        self.board = _DirectBalanceBoard()
+        self.board = DirectBalanceBoard()
 
         self.server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
@@ -74,6 +74,7 @@ class WiiBalanceDaemon:
             self.board.disconnect()
             os.remove(SOCKET_PATH)
 
+
 def setup_daemon(address: str | None = None):
     print("Setting up Wii Balance Board Daemon...")
 
@@ -83,7 +84,7 @@ def setup_daemon(address: str | None = None):
     # 2. Find the board
     if not address:
         print("Searching for board... (Press the red sync button!)")
-        address = _DirectBalanceBoard.discover()
+        address = DirectBalanceBoard.discover()
         if address:
             print(f"Found board at {address}")
         else:
@@ -92,10 +93,9 @@ def setup_daemon(address: str | None = None):
     else:
         print(f"Using specified address: {address}")
 
-
     # 3. Save config
     config = {"daemon_enabled": True, "address": address}
-    CONFIG_PATH.write_text(json.dumps(config, indent=4))
+    write_config(config)
 
     # 4. Write systemd user service
     systemd_dir = Path.home() / ".config" / "systemd" / "user"
@@ -125,13 +125,16 @@ WantedBy=default.target
         subprocess.run(["systemctl", "--user", "enable", "--now", "wiibalanced.service"], check=True)
         subprocess.run(["systemctl", "--user", "start", "wiibalanced.service"], check=True)
         print("Success! The WiiBalance Daemon is installed and running in the background.")
-        print("You can now run Python scripts without pressing the sync button first; the daemon will automatically reconnect and stay connected.")
+        print(
+            "You can now run Python scripts without pressing the sync button first; the daemon will automatically reconnect and stay connected.")
         print("Manage the daemon: 'systemctl --user status wiibalanced.service'")
     except subprocess.CalledProcessError:
         print("Error: Could not configure systemd service. Are you running systemd?")
 
+
 def teardown_daemon():
-    if subprocess.run(["systemctl", "--user", "status", "wiibalanced.service"], stdout=subprocess.DEVNULL).returncode != 0:
+    if subprocess.run(["systemctl", "--user", "status", "wiibalanced.service"],
+                      stdout=subprocess.DEVNULL).returncode != 0:
         print("The WiiBalance Daemon is not installed.")
         return
     print("Removing the Wii Balance Board Daemon...")
@@ -139,10 +142,11 @@ def teardown_daemon():
         subprocess.run(["systemctl", "--user", "stop", "wiibalanced.service"])
         subprocess.run(["systemctl", "--user", "disable", "wiibalanced.service"])
         subprocess.run(["systemctl", "--user", "daemon-reload"])
-        address = load_config().get("address", None)
-        config = {"daemon_enabled": False, "address": address}
-        CONFIG_PATH.write_text(json.dumps(config, indent=4))
-        print("The WiiBalance Daemon has been removed. You will now need to press the sync button before using any WiiBalance command.")
+        config = load_config()
+        config["daemon_enabled"] = False
+        write_config(config)
+        print(
+            "The WiiBalance Daemon has been removed. You will now need to press the sync button before using any WiiBalance command.")
     except subprocess.CalledProcessError:
         print("Error: Could not remove systemd service. Are you running systemd?")
 

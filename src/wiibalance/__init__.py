@@ -1,5 +1,5 @@
 import sys
-from wiibalance._direct import _DirectBalanceBoard
+from wiibalance._direct import DirectBalanceBoard
 from wiibalance._client import _DaemonBalanceBoard
 from wiibalance.config import Weights, BoardNotFoundError, DaemonNotRunningError, PlatformNotSupportedError, load_config
 from wiibalance.state import BalanceBoard
@@ -23,8 +23,8 @@ def create_balance_board(address: str | None = None, use_daemon: bool | None = N
         return _DaemonBalanceBoard()
     else:
         target_address = address or conf.get("address")
-        return _DirectBalanceBoard(address=target_address)
+        return DirectBalanceBoard(address=target_address)
 
 
 # Expose these to users who import wiibalance
-__all__ = ["create_balance_board", "Weights", "BoardNotFoundError", "DaemonNotRunningError", "PlatformNotSupportedError"]
+__all__ = ["create_balance_board", "DirectBalanceBoard", "BalanceBoard", "Weights", "BoardNotFoundError", "DaemonNotRunningError", "PlatformNotSupportedError"]

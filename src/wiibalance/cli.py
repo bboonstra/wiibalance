@@ -4,7 +4,9 @@ import subprocess
 import sys
 import time
 from wiibalance import create_balance_board, PlatformNotSupportedError
+from .config import load_config
 from wiibalance._display import LiveDisplay
+from wiibalance.config import write_config
 from wiibalance.daemon import setup_daemon, teardown_daemon
 
 
@@ -16,7 +18,8 @@ def main():
     daemon_group = shared_parser.add_mutually_exclusive_group()
     daemon_group.add_argument("--daemon", action="store_true", default=None, help="Force daemon mode")
     daemon_group.add_argument("--no-daemon", action="store_false", dest="daemon", help="Force direct Bluetooth mode")
-    shared_parser.add_argument("-a", "--address", type=str, default=None, help="Bluetooth MAC address of the Wii Balance Board")
+    shared_parser.add_argument("-a", "--address", type=str, default=None,
+                               help="Bluetooth MAC address of the Wii Balance Board")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -26,12 +29,26 @@ def main():
 
     # Interaction commands (inherits shared_parser so -a/--address and daemon flags work here too)
     subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
+
     subparsers.add_parser("cop", parents=[shared_parser], help="Read current center of pressure")
+
+    battery_parser = subparsers.add_parser("battery", parents=[shared_parser], help="Read current battery level")
+    battery_parser.add_argument("--bars", action="store_true", help="Show battery bars instead of percentage")
+
     led_parser = subparsers.add_parser("led", parents=[shared_parser], help="Toggle the board LED")
     led_parser.add_argument("--on", action="store_true", help="Turn LED on")
     led_parser.add_argument("--off", action="store_true", help="Turn LED off")
+
     live_parser = subparsers.add_parser("live", parents=[shared_parser], help="Stream live stats from the board")
     live_parser.add_argument("--json", action="store_true", help="Output stream as JSON lines")
+
+    subparsers.add_parser("disconnect", parents=[shared_parser], help="Disconnect from the board")
+
+    conf_parser = subparsers.add_parser("config", help="Configure the daemon")
+    conf_parser.add_argument("action", choices=["set", "get", "reset"])
+    conf_parser.add_argument("key", type=str, help="Configuration key")
+    conf_parser.add_argument("value", type=str, nargs="?", help="Configuration value")
+
     args = parser.parse_args()
 
     if not sys.platform.startswith('linux'):
@@ -56,7 +73,7 @@ def main():
         try:
             board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
-            print(f"Total Weight: {state.weights.total:.2f}")
+            print(f"Total Weight: {state.calibrated_weight:.2f}")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -65,6 +82,17 @@ def main():
             board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
             print(f"Center of Pressure: {state.weights.center_of_pressure}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+    elif args.command == "battery":
+        try:
+            board = create_balance_board(address=args.address, use_daemon=args.daemon)
+            state = board.read_state()
+            if args.bars:
+                print(f"{state.battery_bars}")
+            else:
+                print(f"{state.battery_percent:.2f}%")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -81,7 +109,7 @@ def main():
                 return
             else:
                 board.toggle_led()
-                print(f"LED is now {board.led and 'on' or 'off'}")
+                print(f"LED is now {board.read_state().led and 'on' or 'off'}")
             print("LED toggled.")
         except Exception as e:
             print(f"Error: {e}")
@@ -95,28 +123,28 @@ def main():
                 state = board.read_state()
                 weights = state.weights
                 cop_x, cop_y = weights.center_of_pressure
-                battery_pct = getattr(state, "battery_percent", 0) or 0
 
                 if args.json:
                     # UNCHANGED shape/keys — stays compatible with existing consumers
                     data = {
-                        "total": round(weights.total, 2),
-                        "compensated": round(state.compensated_weight, 2),
-                        "topleft": round(weights.topleft, 2),
-                        "topright": round(weights.topright, 2),
-                        "bottomleft": round(weights.bottomleft, 2),
-                        "bottomright": round(weights.bottomright, 2),
+                        "raw": round(weights.total, 2),
+                        "compensated": round(state.calibrated_weight, 2),
+                        "top_left": round(weights.top_left, 2),
+                        "top_right": round(weights.top_right, 2),
+                        "bottom_left": round(weights.bottom_left, 2),
+                        "bottom_right": round(weights.bottom_right, 2),
                         "center_of_pressure_x": cop_x,
                         "center_of_pressure_y": cop_y,
                         "button": state.button,
                         "battery": state.battery_percent,
                         "battery_bars": state.battery_bars,
                         "led": state.led,
+                        "unit": "kg" if load_config().get('units') == 'metric' else 'lbs',
                         "timestamp": time.time(),
                     }
                     print(json.dumps(data))
                 else:
-                    dashboard.render(weights, cop_x, cop_y, state.button, state.battery_percent)
+                    dashboard.render(state)
 
                 time.sleep(0.05)  # ~20 FPS refresh rate
 
@@ -124,6 +152,35 @@ def main():
             return
         except Exception as e:
             print(f"\nError: {e}")
+
+    elif args.command == "config":
+        try:
+            config = load_config()
+            if args.action == "set":
+                config[args.key] = args.value
+            elif args.action == "get":
+                print(config.get(args.key, "(not set)"))
+            elif args.action == "reset":
+                if args.key:
+                    del config[args.key]
+                else:
+                    config.clear()
+
+            write_config(config)
+
+            print(f"Updated config:\n {json.dumps(load_config(), indent=4)}")
+
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+    elif args.command == "disconnect":
+        try:
+            board = create_balance_board(address=args.address, use_daemon=args.daemon)
+            board.disconnect()
+        except Exception as e:
+            print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

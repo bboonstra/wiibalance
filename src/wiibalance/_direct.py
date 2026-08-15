@@ -2,16 +2,17 @@ import socket
 import subprocess
 import threading
 
+from . import load_config
 from .config import (
     COMMAND_CALIBRATION,
     COMMAND_LED,
     COMMAND_REPORTING,
     COMMAND_STATUS,
     DEVICE_NAME,
-    POSITION_BOTTOMLEFT,
-    POSITION_BOTTOMRIGHT,
-    POSITION_TOPLEFT,
-    POSITION_TOPRIGHT,
+    POSITION_BOTTOM_LEFT,
+    POSITION_BOTTOM_RIGHT,
+    POSITION_TOP_LEFT,
+    POSITION_TOP_RIGHT,
     PSM_RECV,
     PSM_SEND,
     TYPE_CALIBRATION,
@@ -23,7 +24,7 @@ from .config import (
 from .state import BoardState, BalanceBoard
 
 
-class _DirectBalanceBoard(BalanceBoard):
+class DirectBalanceBoard(BalanceBoard):
     def __init__(self, address: str | None = None, timeout: int = 5):
         self.address = address or self.discover()
         self.timeout = timeout
@@ -47,15 +48,19 @@ class _DirectBalanceBoard(BalanceBoard):
         self._battery = -1
         self._temperature = -1
 
+        self.on_button_press = []
+        self.on_button_release = []
+        self.on_button_change = []
+
         self._weights = Weights(
-            topright=-1,
-            topleft=-1,
-            bottomright=-1,
-            bottomleft=-1,
-            raw_topright=-1,
-            raw_topleft=-1,
-            raw_bottomright=-1,
-            raw_bottomleft=-1,
+            top_right=-1,
+            top_left=-1,
+            bottom_right=-1,
+            bottom_left=-1,
+            raw_top_right=-1,
+            raw_top_left=-1,
+            raw_bottom_right=-1,
+            raw_bottom_left=-1,
         )
 
         self._button = False
@@ -145,7 +150,7 @@ class _DirectBalanceBoard(BalanceBoard):
         self.send_sock = None
         self.recv_sock = None
 
-    # ---------------------------------------------------------------
+# ---------------------------------------------------------------
     # Communication
     # ---------------------------------------------------------------
 
@@ -274,15 +279,18 @@ class _DirectBalanceBoard(BalanceBoard):
 
         values = [self._parse_sample(raw[position], position) for position in range(4)]
 
+        if load_config().get('units') == 'imperial':
+            values = [v * 2.20462 for v in values]
+
         return Weights(
-            topright=values[POSITION_TOPRIGHT],
-            topleft=values[POSITION_TOPLEFT],
-            bottomright=values[POSITION_BOTTOMRIGHT],
-            bottomleft=values[POSITION_BOTTOMLEFT],
-            raw_topright=raw[POSITION_TOPRIGHT],
-            raw_topleft=raw[POSITION_TOPLEFT],
-            raw_bottomright=raw[POSITION_BOTTOMRIGHT],
-            raw_bottomleft=raw[POSITION_BOTTOMLEFT],
+            top_right=values[POSITION_TOP_RIGHT],
+            top_left=values[POSITION_TOP_LEFT],
+            bottom_right=values[POSITION_BOTTOM_RIGHT],
+            bottom_left=values[POSITION_BOTTOM_LEFT],
+            raw_top_right=raw[POSITION_TOP_RIGHT],
+            raw_top_left=raw[POSITION_TOP_LEFT],
+            raw_bottom_right=raw[POSITION_BOTTOM_RIGHT],
+            raw_bottom_left=raw[POSITION_BOTTOM_LEFT],
         )
 
     # ---------------------------------------------------------------
@@ -327,7 +335,20 @@ class _DirectBalanceBoard(BalanceBoard):
                     self._weights = self._parse_sample_packet(packet)
                     self._temperature = packet[12]
                     self._battery = packet[14]
-                    self._button = bool(packet[3] & 0x08)
+
+                    new_button = bool(packet[3] & 0x08)
+                    if new_button != self._button:
+                        self._button = new_button
+                        for callback in self.on_button_change:
+                                callback(self.read_state())
+
+                        if new_button:
+                            for callback in self.on_button_press:
+                                    callback(self.read_state())
+                        else:
+                            for callback in self.on_button_release:
+                                    callback(self.read_state())
+
                     if not self._first_packet_received.is_set():
                         self._first_packet_received.set()
             except OSError:
