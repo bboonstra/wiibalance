@@ -55,14 +55,16 @@ def main():
     elif args.command == "weight":
         try:
             board = BalanceBoard(address=args.address, use_daemon=args.daemon)
-            print(f"Total Weight: {board.weights.total:.2f}")
+            state = board.read_state()
+            print(f"Total Weight: {state.weights.total:.2f}")
         except Exception as e:
             print(f"Error: {e}")
 
     elif args.command == "cop":
         try:
             board = BalanceBoard(address=args.address, use_daemon=args.daemon)
-            print(f"Center of Pressure: {board.weights.center_of_pressure}")
+            state = board.read_state()
+            print(f"Center of Pressure: {state.weights.center_of_pressure}")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -90,9 +92,10 @@ def main():
             dashboard = LiveDisplay()
 
             while True:
-                weights = board.weights
+                state = board.read_state()
+                weights = state.weights
                 cop_x, cop_y = weights.center_of_pressure
-                battery_pct = getattr(board, "battery", 0) or 0
+                battery_pct = getattr(state, "battery_percent", 0) or 0
 
                 if args.json:
                     # UNCHANGED shape/keys — stays compatible with existing consumers
@@ -104,12 +107,12 @@ def main():
                         "bottomright": round(weights.bottomright, 2),
                         "center_of_pressure_x": cop_x,
                         "center_of_pressure_y": cop_y,
-                        "button": board.button,
-                        "battery": battery_pct,
+                        "button": state.button,
+                        "battery": state.battery_percent,
                     }
                     print(json.dumps(data))
                 else:
-                    dashboard.render(weights, cop_x, cop_y, board.button, battery_pct)
+                    dashboard.render(weights, cop_x, cop_y, state.button, state.battery_percent)
 
                 time.sleep(0.05)  # ~20 FPS refresh rate
 

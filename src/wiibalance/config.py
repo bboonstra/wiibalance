@@ -4,6 +4,7 @@ from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".config" / "wiibalance"
 CONFIG_PATH = CONFIG_DIR / "config.json"
+SOCKET_PATH = "/tmp/wiibalance.sock"
 
 def load_config() -> dict:
     if CONFIG_PATH.exists():
@@ -13,33 +14,39 @@ def load_config() -> dict:
             pass
     return {"daemon_enabled": False, "address": None}
 
+
 DEVICE_NAME = "Nintendo RVL-WBC-01"
 
-COMMAND_REPORTING = bytes.fromhex("52120432")
+COMMAND_REPORTING = bytes.fromhex("52120434")
 COMMAND_STATUS = bytes.fromhex("521500")
 COMMAND_CALIBRATION = bytes.fromhex("521704A400240018")
+COMMAND_TEMP_CALIBRATION = bytes.fromhex("521704A400600002")
 COMMAND_LED = lambda state: bytes.fromhex(f"5211{state:x}0")
 
 TYPE_STATUS = 0x20
 TYPE_CALIBRATION = 0x21
-TYPE_DATA = 0x32
+TYPE_DATA = 0x34
 
 PSM_SEND = 0x11
 PSM_RECV = 0x13
 
 POSITION_TOPRIGHT = 0
-POSITION_TOPLEFT = 2
 POSITION_BOTTOMRIGHT = 1
+POSITION_TOPLEFT = 2
 POSITION_BOTTOMLEFT = 3
+
 
 class BoardNotFoundError(Exception):
     pass
 
+
 class DaemonNotRunningError(Exception):
     pass
 
+
 class PlatformNotSupportedError(Exception):
     pass
+
 
 @dataclass(kw_only=True)
 class Weights:

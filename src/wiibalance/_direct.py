@@ -1,7 +1,26 @@
 import socket
 import subprocess
 import threading
-from wiibalance.config import *
+
+from .config import (
+    COMMAND_CALIBRATION,
+    COMMAND_LED,
+    COMMAND_REPORTING,
+    COMMAND_STATUS,
+    DEVICE_NAME,
+    POSITION_BOTTOMLEFT,
+    POSITION_BOTTOMRIGHT,
+    POSITION_TOPLEFT,
+    POSITION_TOPRIGHT,
+    PSM_RECV,
+    PSM_SEND,
+    TYPE_CALIBRATION,
+    TYPE_DATA,
+    TYPE_STATUS,
+    BoardNotFoundError,
+    Weights, COMMAND_TEMP_CALIBRATION,
+)
+from .state import BoardState
 
 
 class _DirectBalanceBoard:
@@ -16,7 +35,6 @@ class _DirectBalanceBoard:
 
         self.connected = False
         self.led = False
-        self.battery = -1
 
         self.calibration = [
             [10000] * 4,
@@ -24,7 +42,10 @@ class _DirectBalanceBoard:
             [10000] * 4,
         ]
 
-        self.calibration_completed = [False, False]
+        self.calibration_completed = [False, False, False]  # weight-lo, weight-hi, temp
+        self.reference_temperature: int | None = None
+        self._battery = -1
+        self._temperature = -1
 
         self._weights = Weights(
             topright=-1,
@@ -52,7 +73,9 @@ class _DirectBalanceBoard:
 
         if not self._first_packet_received.wait(timeout=timeout):
             self.disconnect()
-            raise RuntimeError(f"Connected to {DEVICE_NAME}, but timed out waiting for data packets.")
+            raise RuntimeError(
+                f"Connected to {DEVICE_NAME}, but timed out waiting for data packets."
+            )
 
         self.led_on()
 
@@ -98,13 +121,9 @@ class _DirectBalanceBoard:
         self.recv_sock.settimeout(self.timeout)
 
         try:
-            self.recv_sock.connect(
-                (self.address, PSM_RECV)
-            )
+            self.recv_sock.connect((self.address, PSM_RECV))
 
-            self.send_sock.connect(
-                (self.address, PSM_SEND)
-            )
+            self.send_sock.connect((self.address, PSM_SEND))
 
             self.connected = True
 
@@ -149,11 +168,14 @@ class _DirectBalanceBoard:
     def initialize(self) -> None:
         self.send(COMMAND_STATUS)
         self.send(COMMAND_CALIBRATION)
+        self.send(COMMAND_TEMP_CALIBRATION)
         self.send(COMMAND_REPORTING)
 
-        for _ in range(10):
+        for _ in range(12):
             packet = self.receive()
             self._process_initial_packet(packet)
+            if all(self.calibration_completed):
+                break
 
     def _wait_for_data(self, timeout: float = 5.0) -> bool:
         """Blocks until the first valid weight packet is received from the board."""
@@ -184,57 +206,42 @@ class _DirectBalanceBoard:
     # ---------------------------------------------------------------
 
     def _parse_calibration(self, packet: bytes) -> None:
-        """
-        Packet structure:
+        if packet[4] & 0x0F:          # low nibble = read-error flag
+            return
 
-            a1 21 ...
-
-        Calibration data arrives in two packets.
-        """
-
-        # The original code effectively extracted the payload
-        # beginning at byte 7.
         payload_length = packet[4] // 16 + 1
-
+        offset = int.from_bytes(packet[5:7], "big")
         data = packet[7:7 + payload_length]
 
-        if len(data) == 16:
+        if offset == 0x0024 and len(data) == 16:
             index = 0
-
             for calibration_set in range(2):
                 for position in range(4):
-                    self.calibration[
-                        calibration_set
-                    ][position] = int.from_bytes(
-                        data[index:index + 2],
-                        "big",
+                    self.calibration[calibration_set][position] = int.from_bytes(
+                        data[index:index + 2], "big"
                     )
-
                     index += 2
-
             self.calibration_completed[0] = True
 
-        elif len(data) >= 8:
+        elif offset == 0x0034 and len(data) >= 8:
             index = 0
-
             for position in range(4):
-                self.calibration[2][position] = int.from_bytes(
-                    data[index:index + 2],
-                    "big",
-                )
-
+                self.calibration[2][position] = int.from_bytes(data[index:index + 2], "big")
                 index += 2
-
             self.calibration_completed[1] = True
+
+        elif offset == 0x0060 and len(data) >= 1:
+            self.reference_temperature = data[0]
+            self.calibration_completed[2] = True
 
     # ---------------------------------------------------------------
     # Weight conversion
     # ---------------------------------------------------------------
 
     def _parse_sample(
-            self,
-            value: int,
-            position: int,
+        self,
+        value: int,
+        position: int,
     ) -> float:
 
         zero = self.calibration[0][position]
@@ -245,38 +252,27 @@ class _DirectBalanceBoard:
             return 0.0
 
         if value < seventeen:
-            return 17.0 * (
-                    (value - zero)
-                    / (seventeen - zero)
-            )
+            return 17.0 * ((value - zero) / (seventeen - zero))
 
-        return 17.0 + 17.0 * (
-                (value - seventeen)
-                / (thirty_four - seventeen)
-        )
+        return 17.0 + 17.0 * ((value - seventeen) / (thirty_four - seventeen))
 
     def _parse_sample_packet(
-            self,
-            packet: bytes,
+        self,
+        packet: bytes,
     ) -> Weights:
 
         if len(packet) < 12:
-            raise ValueError(
-                f"Invalid data packet: {packet.hex()}"
-            )
+            raise ValueError(f"Invalid data packet: {packet.hex()}")
 
         raw = [
             int.from_bytes(
-                packet[offset:offset + 2],
+                packet[offset : offset + 2],
                 "big",
             )
             for offset in (4, 6, 8, 10)
         ]
 
-        values = [
-            self._parse_sample(raw[position], position)
-            for position in range(4)
-        ]
+        values = [self._parse_sample(raw[position], position) for position in range(4)]
 
         return Weights(
             topright=values[POSITION_TOPRIGHT],
@@ -325,27 +321,29 @@ class _DirectBalanceBoard:
         while not self._stop.is_set():
             try:
                 packet = self.receive()
-
-                if len(packet) < 2:
+                if len(packet) < 15:
                     continue
-
                 if packet[1] == TYPE_DATA:
                     self._weights = self._parse_sample_packet(packet)
-
-                    if len(packet) > 3:
-                        self._button = bool(
-                            packet[3] & 0x08
-                        )
-
+                    self._temperature = packet[12]
+                    self._battery = packet[14]
+                    self._button = bool(packet[3] & 0x08)
                     if not self._first_packet_received.is_set():
                         self._first_packet_received.set()
-
             except OSError:
                 if not self._stop.is_set():
                     self.connected = False
                 break
-
             except Exception as exc:
-                print(
-                    f"Balance Board error: {exc}"
-                )
+                print(f"Balance Board error: {exc}")
+
+    def read_state(self) -> BoardState:
+        return BoardState(
+            weights=self._weights,
+            button=self._button,
+            led=self.led,
+            connected=self.connected,
+            battery_raw=self._battery,
+            temperature_raw=self._temperature,
+            reference_temperature=self.reference_temperature,
+        )

@@ -36,12 +36,15 @@ class WiiBalanceDaemon:
                 command = request.get("cmd")
 
                 if command == "GET_STATE":
+                    state = self.board.read_state()
                     response = {
-                        "weights": self.board.weights.to_dict(),
-                        "button": self.board.button,
-                        "led": self.board.led,
-                        "battery": self.board.battery,
-                        "connected": self.board.connected
+                        "weights": state.weights.to_dict(),
+                        "button": state.button,
+                        "led": state.led,
+                        "connected": state.connected,
+                        "battery_raw": state.battery_raw,
+                        "temperature_raw": state.temperature_raw,
+                        "reference_temperature": state.reference_temperature,
                     }
                     conn.sendall(json.dumps(response).encode())
 
@@ -58,8 +61,7 @@ class WiiBalanceDaemon:
                     conn.sendall(json.dumps({"status": "ok"}).encode())
 
             except Exception as e:
-                error_resp = json.dumps({"error": str(e)})
-                conn.sendall(error_resp.encode())
+                conn.sendall(json.dumps({"error": str(e)}).encode())
 
     def run(self):
         print(f"Daemon listening on {SOCKET_PATH}...")

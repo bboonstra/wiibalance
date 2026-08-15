@@ -1,13 +1,12 @@
 import socket
 import json
-from wiibalance.config import Weights, DaemonNotRunningError
+from .state import BoardState
+from .config import Weights, DaemonNotRunningError, SOCKET_PATH
 
-SOCKET_PATH = "/tmp/wiibalance.sock"
 
 class _DaemonBalanceBoard:
     def __init__(self):
-        # We ping the server on init to ensure it's alive
-        self._send_command("GET_STATE")
+        self.read_state()  # ping on init to fail fast if daemon's unreachable
 
     @staticmethod
     def _send_command(command: str) -> dict:
@@ -15,39 +14,26 @@ class _DaemonBalanceBoard:
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
                 client.connect(SOCKET_PATH)
                 client.sendall(json.dumps({"cmd": command}).encode())
-
-                response_data = client.recv(4096).decode()
-                response = json.loads(response_data)
-
+                response = json.loads(client.recv(4096).decode())
                 if "error" in response:
                     raise RuntimeError(f"Daemon error: {response['error']}")
-
                 return response
         except (FileNotFoundError, ConnectionRefusedError):
             raise DaemonNotRunningError(
                 "WiiBalance daemon is not running. Start it or pass use_daemon=False."
             )
 
-    @property
-    def weights(self) -> Weights:
+    def read_state(self) -> BoardState:
         data = self._send_command("GET_STATE")
-        return Weights(**data["weights"])
-
-    @property
-    def button(self) -> bool:
-        return self._send_command("GET_STATE")["button"]
-
-    @property
-    def battery(self) -> int:
-        return self._send_command("GET_STATE")["battery"]
-
-    @property
-    def connected(self) -> bool:
-        return self._send_command("GET_STATE")["connected"]
-
-    @property
-    def led(self) -> bool:
-        return self._send_command("GET_STATE")["led"]
+        return BoardState(
+            weights=Weights(**data["weights"]),
+            button=data["button"],
+            led=data["led"],
+            connected=data["connected"],
+            battery_raw=data["battery_raw"],
+            temperature_raw=data["temperature_raw"],
+            reference_temperature=data["reference_temperature"],
+        )
 
     def toggle_led(self) -> None:
         self._send_command("TOGGLE_LED")
@@ -59,4 +45,4 @@ class _DaemonBalanceBoard:
         self._send_command("LED_OFF")
 
     def disconnect(self) -> None:
-        pass # Client doesn't manage the physical connection
+        pass  # client doesn't own the physical connection
