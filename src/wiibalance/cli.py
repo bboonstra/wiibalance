@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from wiibalance import BalanceBoard, PlatformNotSupportedError
 from wiibalance._direct import _DirectBalanceBoard
+from wiibalance._display import LiveDisplay
 
 CONFIG_DIR = Path.home() / ".config" / "wiibalance"
 CONFIG_PATH = CONFIG_DIR / "config.json"
@@ -125,11 +126,15 @@ def main():
     elif args.command == "live":
         try:
             board = BalanceBoard(address=args.address, use_daemon=args.daemon)
+            dashboard = LiveDisplay()
+
             while True:
                 weights = board.weights
                 cop_x, cop_y = weights.center_of_pressure
+                battery_pct = getattr(board, "battery", 0) or 0
 
                 if args.json:
+                    # UNCHANGED shape/keys — stays compatible with existing consumers
                     data = {
                         "total": round(weights.total, 2),
                         "topleft": round(weights.topleft, 2),
@@ -139,60 +144,13 @@ def main():
                         "center_of_pressure_x": cop_x,
                         "center_of_pressure_y": cop_y,
                         "button": board.button,
-                        "battery": board.battery
+                        "battery": battery_pct,
                     }
                     print(json.dumps(data))
                 else:
-                    NUM_LINES = 12  # total lines in the dashboard block below — update if you add/remove a line
+                    dashboard.render(weights, cop_x, cop_y, board.button, battery_pct)
 
-                    # Move cursor to the top of the dashboard block before redrawing.
-                    # On the first frame there's nothing above yet, so skip the move.
-                    if getattr(main, "_frame_count", 0) > 0:
-                        cursor_reset = f"\033[{NUM_LINES}A"
-                    else:
-                        cursor_reset = ""
-                    main._frame_count = getattr(main, "_frame_count", 0) + 1
-
-                    # Map CoP range [-1.0, 1.0] to a 5-column by 3-row grid index
-                    # X: -1 (left) to +1 (right) -> columns 0 to 4
-                    # Y: -1 (back) to +1 (front) -> rows 0 (front) to 2 (back)
-                    GRID_COLS, GRID_ROWS = 5, 3
-
-                    col = int(round(min(max(cop_x, -1.0), 1.0) * 2) + 2)
-                    row = int(round(-min(max(cop_y, -1.0), 1.0) * 1) + 1)  # Invert Y for screen rendering
-
-                    # Re-clamp after rounding so a future scale/offset change can't index out of bounds
-                    col = max(0, min(GRID_COLS - 1, col))
-                    row = max(0, min(GRID_ROWS - 1, row))
-
-                    # Build the 3-row text grid (5:3 visual box representation)
-                    grid_rows = [["·", "·", "·", "·", "·"] for _ in range(GRID_ROWS)]
-                    grid_rows[row][col] = "O"
-
-                    # Guard against missing/late sensor data so one bad frame doesn't kill the loop
-                    total_weight = getattr(weights, "total", 0.0) or 0.0
-                    battery_pct = getattr(board, "battery", 0) or 0
-
-                    # Render text dashboard cleanly, redrawing in place via cursor-up + per-line clear
-                    output = (
-                        f"{cursor_reset}"
-                        f"┌─────────────────────────┐\033[K\n"
-                        f"│  Weight: {total_weight:6.2f} kg      │\033[K\n"
-                        f"│  CoP X: {cop_x:+5.2f} Y: {cop_y:+5.2f}  │\033[K\n"
-                        f"│  Battery: {battery_pct:3d}%          │\033[K\n"
-                        f"├─────────────────────────┤\033[K\n"
-                        f"│       [FRONT]           │\033[K\n"
-                        f"│     {grid_rows[0][0]} {grid_rows[0][1]} {grid_rows[0][2]} {grid_rows[0][3]} {grid_rows[0][4]}           │\033[K\n"
-                        f"│     {grid_rows[1][0]} {grid_rows[1][1]} {grid_rows[1][2]} {grid_rows[1][3]} {grid_rows[1][4]}  [CoP]    │\033[K\n"
-                        f"│     {grid_rows[2][0]} {grid_rows[2][1]} {grid_rows[2][2]} {grid_rows[2][3]} {grid_rows[2][4]}           │\033[K\n"
-                        f"│       [BACK]            │\033[K\n"
-                        f"└─────────────────────────┘\033[K\n"
-                        f"  (Press Ctrl+C to exit)\033[K"
-                    )
-                    sys.stdout.write(output)
-                    sys.stdout.flush()
-
-                time.sleep(0.05) # ~20 FPS refresh rate
+                time.sleep(0.05)  # ~20 FPS refresh rate
 
         except KeyboardInterrupt:
             return

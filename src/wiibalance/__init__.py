@@ -15,6 +15,8 @@ def _load_config() -> dict:
             pass
     return {"daemon_enabled": False, "address": None}
 
+
+# noinspection pep8-naming
 def BalanceBoard(address: str | None = None, use_daemon: bool | None = None):
     """
     Factory function that returns either a direct Bluetooth connection
