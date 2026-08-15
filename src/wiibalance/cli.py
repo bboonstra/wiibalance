@@ -143,7 +143,7 @@ def main():
                     }
                     print(json.dumps(data))
                 else:
-                    NUM_LINES = 11  # total lines in the dashboard block below — update if you add/remove a line
+                    NUM_LINES = 12  # total lines in the dashboard block below — update if you add/remove a line
 
                     # Move cursor to the top of the dashboard block before redrawing.
                     # On the first frame there's nothing above yet, so skip the move.
@@ -178,8 +178,8 @@ def main():
                         f"{cursor_reset}"
                         f"┌─────────────────────────┐\033[K\n"
                         f"│  Weight: {total_weight:6.2f} kg      │\033[K\n"
-                        f"│  CoP X: {cop_x:+5.2f} Y: {cop_y:+5.2f}   │\033[K\n"
-                        f"│  Battery: {battery_pct:3d}%           │\033[K\n"
+                        f"│  CoP X: {cop_x:+5.2f} Y: {cop_y:+5.2f}  │\033[K\n"
+                        f"│  Battery: {battery_pct:3d}%          │\033[K\n"
                         f"├─────────────────────────┤\033[K\n"
                         f"│       [FRONT]           │\033[K\n"
                         f"│     {grid_rows[0][0]} {grid_rows[0][1]} {grid_rows[0][2]} {grid_rows[0][3]} {grid_rows[0][4]}           │\033[K\n"
