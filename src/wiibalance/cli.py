@@ -1,0 +1,108 @@
+import argparse
+import json
+import subprocess
+from pathlib import Path
+from wiibalance import BalanceBoard
+from wiibalance._direct import _DirectBalanceBoard
+
+CONFIG_DIR = Path.home() / ".config" / "wiibalance"
+CONFIG_PATH = CONFIG_DIR / "config.json"
+
+def setup_daemon(address: str | None = None):
+    print("Setting up Wii Balance Board Daemon...")
+
+    # 1. Ensure the config dir exists
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+    # 2. Find the board
+    if not address:
+        print("Searching for board... (Press the red sync button!)")
+        address = _DirectBalanceBoard.discover()
+        if address:
+            print(f"Found board at {address}")
+        else:
+            print("Board not found. Try supplying the address manually with --address.")
+            return
+    else:
+        print(f"Using specified address: {address}")
+
+
+    # 3. Save config
+    config = {"daemon_enabled": True, "address": address}
+    CONFIG_PATH.write_text(json.dumps(config, indent=4))
+
+    # 4. Write systemd user service
+    systemd_dir = Path.home() / ".config" / "systemd" / "user"
+    systemd_dir.mkdir(parents=True, exist_ok=True)
+
+    # We use sys.executable to ensure the daemon uses the same python environment
+    import sys
+    python_path = sys.executable
+
+    service_file = systemd_dir / "wiibalanced.service"
+    service_file.write_text(f"""[Unit]
+Description=Wii Balance Board Daemon
+
+[Service]
+Type=simple
+ExecStart={python_path} -m wiibalance.daemon
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+""")
+
+    # 5. Enable and start the service
+    try:
+        subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "--user", "enable", "--now", "wiibalanced.service"], check=True)
+        print("Success! Daemon is installed and running in the background.")
+        print("You can now run Python scripts without pressing the sync button.")
+    except subprocess.CalledProcessError:
+        print("Error: Could not configure systemd service. Are you running systemd?")
+
+def main():
+    parser = argparse.ArgumentParser(prog="wiibalance", description="Wii Balance Board CLI")
+
+    daemon_group = parser.add_mutually_exclusive_group()
+    daemon_group.add_argument("--daemon", action="store_true", default=None, help="Force daemon mode")
+    daemon_group.add_argument("--no-daemon", action="store_false", dest="daemon", help="Force direct bluetooth mode")
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Service commands
+    service_parser = subparsers.add_parser("service", help="Manage the background daemon")
+    service_parser.add_argument("action", choices=["setup", "status"])
+    service_parser.add_argument("--address", help="Bluetooth address of the board")
+
+    # Interaction commands
+    subparsers.add_parser("weight", help="Read current total weight")
+    subparsers.add_parser("led", help="Toggle the board LED")
+
+    args = parser.parse_args()
+
+    # Route commands
+    if args.command == "service":
+        if args.action == "setup":
+            setup_daemon()
+        elif args.action == "status":
+            subprocess.run(["systemctl", "--user", "status", "wiibalanced.service"])
+
+    elif args.command == "weight":
+        try:
+            board = BalanceBoard(use_daemon=args.daemon)
+            print(f"Total Weight: {board.weights.total:.2f}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+    elif args.command == "led":
+        try:
+            board = BalanceBoard(use_daemon=args.daemon)
+            board.toggle_led()
+            print("LED toggled.")
+        except Exception as e:
+            print(f"Error: {e}")
+
+if __name__ == "__main__":
+    main()

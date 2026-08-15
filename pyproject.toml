@@ -9,7 +9,7 @@ description = "Modern Python interface and CLI for the Nintendo Wii Balance Boar
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-authors = [{ name = "Ben Boonstra" }]
+authors = [{ name = "Ben Boonstra", email = "ben@bboonstra.dev" }]
 keywords = ["wii", "balance-board", "bluetooth", "bluez", "l2cap"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -30,4 +30,6 @@ Issues = "https://github.com/bboonstra/wiibalance/issues"
 
 [project.scripts]
 wiibalance = "wiibalance.cli:main"
-wiibalance-daemon = "wiibalance.daemon:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wiibalance"]

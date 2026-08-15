@@ -1,65 +1,14 @@
-from __future__ import annotations
-
 import socket
 import subprocess
 import threading
-from dataclasses import dataclass
+from wiibalance.models import *
 
 
-DEVICE_NAME = "Nintendo RVL-WBC-01"
-
-COMMAND_REPORTING = bytes.fromhex("52120432")
-COMMAND_STATUS = bytes.fromhex("521500")
-COMMAND_CALIBRATION = bytes.fromhex("521704A400240018")
-COMMAND_LED = lambda state: bytes.fromhex(f"5211{state:x}0")
-
-TYPE_STATUS = 0x20
-TYPE_CALIBRATION = 0x21
-TYPE_DATA = 0x32
-
-PSM_SEND = 0x11
-PSM_RECV = 0x13
-
-POSITION_TOPRIGHT = 0
-POSITION_TOPLEFT = 1
-POSITION_BOTTOMRIGHT = 2
-POSITION_BOTTOMLEFT = 3
-
-
-class BoardNotFoundError(Exception):
-    pass
-
-
-@dataclass
-class Weights:
-    topright: float
-    topleft: float
-    bottomright: float
-    bottomleft: float
-
-    raw_topright: int
-    raw_topleft: int
-    raw_bottomright: int
-    raw_bottomleft: int
-
-    @property
-    def total(self) -> float:
-        return (
-                self.topright
-                + self.topleft
-                + self.bottomright
-                + self.bottomleft
-        )
-
-
-class BalanceBoard:
+class _DirectBalanceBoard:
     def __init__(self, address: str | None = None):
         self.address = address or self.discover()
-
         if self.address is None:
-            raise BoardNotFoundError(
-                f"{DEVICE_NAME} not found"
-            )
+            raise BoardNotFoundError(f"{DEVICE_NAME} not found")
 
         self.send_sock = None
         self.recv_sock = None
