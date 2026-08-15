@@ -3,69 +3,10 @@ import json
 import subprocess
 import sys
 import time
-from pathlib import Path
 from wiibalance import BalanceBoard, PlatformNotSupportedError
-from wiibalance._direct import _DirectBalanceBoard
 from wiibalance._display import LiveDisplay
+from wiibalance.daemon import setup_daemon, teardown_daemon
 
-CONFIG_DIR = Path.home() / ".config" / "wiibalance"
-CONFIG_PATH = CONFIG_DIR / "config.json"
-
-def setup_daemon(address: str | None = None):
-    print("Setting up Wii Balance Board Daemon...")
-
-    # 1. Ensure the config dir exists
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-    # 2. Find the board
-    if not address:
-        print("Searching for board... (Press the red sync button!)")
-        address = _DirectBalanceBoard.discover()
-        if address:
-            print(f"Found board at {address}")
-        else:
-            print("Board not found. Try supplying the address manually with --address.")
-            return
-    else:
-        print(f"Using specified address: {address}")
-
-
-    # 3. Save config
-    config = {"daemon_enabled": True, "address": address}
-    CONFIG_PATH.write_text(json.dumps(config, indent=4))
-
-    # 4. Write systemd user service
-    systemd_dir = Path.home() / ".config" / "systemd" / "user"
-    systemd_dir.mkdir(parents=True, exist_ok=True)
-
-    # We use sys.executable to ensure the daemon uses the same python environment
-    import sys
-    python_path = sys.executable
-
-    service_file = systemd_dir / "wiibalanced.service"
-    service_file.write_text(f"""[Unit]
-Description=Wii Balance Board Daemon
-
-[Service]
-Type=simple
-ExecStart={python_path} -m wiibalance.daemon
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=default.target
-""")
-
-    # 5. Enable and start the service
-    try:
-        subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-        subprocess.run(["systemctl", "--user", "enable", "--now", "wiibalanced.service"], check=True)
-        subprocess.run(["systemctl", "--user", "start", "wiibalanced.service"], check=True)
-        print("Success! The WiiBalance Daemon is installed and running in the background.")
-        print("You can now run Python scripts without pressing the sync button first; the daemon will automatically reconnect and stay connected.")
-        print("Manage the daemon: 'systemctl --user status wiibalanced.service'")
-    except subprocess.CalledProcessError:
-        print("Error: Could not configure systemd service. Are you running systemd?")
 
 def main():
     parser = argparse.ArgumentParser(prog="wiibalance", description="Wii Balance Board CLI")
@@ -81,7 +22,7 @@ def main():
 
     # Service commands (inherit shared_parser so -a/--address and daemon flags work)
     service_parser = subparsers.add_parser("service", parents=[shared_parser], help="Manage the background daemon")
-    service_parser.add_argument("action", choices=["setup", "status"])
+    service_parser.add_argument("action", choices=["setup", "status", "start", "stop", "restart", "remove"])
 
     # Interaction commands (inherits shared_parser so -a/--address and daemon flags work here too)
     subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
@@ -102,6 +43,14 @@ def main():
             setup_daemon(address=args.address)
         elif args.action == "status":
             subprocess.run(["systemctl", "--user", "status", "wiibalanced.service"])
+        elif args.action == "start":
+            subprocess.run(["systemctl", "--user", "start", "wiibalanced.service"])
+        elif args.action == "stop":
+            subprocess.run(["systemctl", "--user", "stop", "wiibalanced.service"])
+        elif args.action == "restart":
+            subprocess.run(["systemctl", "--user", "restart", "wiibalanced.service"])
+        elif args.action == "remove":
+            teardown_daemon()
 
     elif args.command == "weight":
         try:

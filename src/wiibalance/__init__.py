@@ -3,18 +3,7 @@ import sys
 from pathlib import Path
 from wiibalance._direct import _DirectBalanceBoard
 from wiibalance._client import _DaemonBalanceBoard
-from wiibalance.models import Weights, BoardNotFoundError, DaemonNotRunningError, PlatformNotSupportedError
-
-CONFIG_PATH = Path.home() / ".config" / "wiibalance" / "config.json"
-
-def _load_config() -> dict:
-    if CONFIG_PATH.exists():
-        try:
-            return json.loads(CONFIG_PATH.read_text())
-        except json.JSONDecodeError:
-            pass
-    return {"daemon_enabled": False, "address": None}
-
+from wiibalance.config import Weights, BoardNotFoundError, DaemonNotRunningError, PlatformNotSupportedError
 
 # noinspection pep8-naming
 def BalanceBoard(address: str | None = None, use_daemon: bool | None = None):

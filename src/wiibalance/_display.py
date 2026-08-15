@@ -121,7 +121,7 @@ class LiveDisplay:
         if spread < 0.06:
             return f"{C.BR_GREEN}steady{C.RESET}"
         if spread < 0.20:
-            return f"{C.BR_YELLOW}shifting{C.RESET}"
+            return f"{C.BR_YELLOW}shifty{C.RESET}"
         return f"{C.BR_RED}wobbly{C.RESET}"
 
     def render(self, weights, cop_x, cop_y, button, battery_pct):

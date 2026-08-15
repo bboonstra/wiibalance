@@ -1,7 +1,7 @@
 import socket
 import subprocess
 import threading
-from wiibalance.models import *
+from wiibalance.config import *
 
 
 class _DirectBalanceBoard:

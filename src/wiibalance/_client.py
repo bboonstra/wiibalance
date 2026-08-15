@@ -1,6 +1,6 @@
 import socket
 import json
-from wiibalance.models import Weights, DaemonNotRunningError
+from wiibalance.config import Weights, DaemonNotRunningError
 
 SOCKET_PATH = "/tmp/wiibalance.sock"
 

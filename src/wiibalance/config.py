@@ -1,4 +1,17 @@
+import json
 from dataclasses import dataclass
+from pathlib import Path
+
+CONFIG_DIR = Path.home() / ".config" / "wiibalance"
+CONFIG_PATH = CONFIG_DIR / "config.json"
+
+def load_config() -> dict:
+    if CONFIG_PATH.exists():
+        try:
+            return json.loads(CONFIG_PATH.read_text())
+        except json.JSONDecodeError:
+            pass
+    return {"daemon_enabled": False, "address": None}
 
 DEVICE_NAME = "Nintendo RVL-WBC-01"
 
@@ -43,7 +56,7 @@ class Weights:
     @property
     def center_of_pressure(self) -> tuple[float, float]:
         """
-        Calculate normalized center of pressure.
+        Calculate a normalized center of pressure.
 
         x:
             -1 = left
