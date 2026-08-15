@@ -67,8 +67,9 @@ def main():
 
     daemon_group = parser.add_mutually_exclusive_group()
     daemon_group.add_argument("--daemon", action="store_true", default=None, help="Force daemon mode")
-    daemon_group.add_argument("--no-daemon", action="store_false", dest="daemon", help="Force direct bluetooth mode")
+    daemon_group.add_argument("--no-daemon", action="store_false", dest="daemon", help="Force direct Bluetooth mode")
 
+    parser.add_argument("--address", help="Bluetooth address of the board", default=None)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Service commands
@@ -91,14 +92,14 @@ def main():
 
     elif args.command == "weight":
         try:
-            board = BalanceBoard(use_daemon=args.daemon)
+            board = BalanceBoard(address=args.address, use_daemon=args.daemon)
             print(f"Total Weight: {board.weights.total:.2f}")
         except Exception as e:
             print(f"Error: {e}")
 
     elif args.command == "led":
         try:
-            board = BalanceBoard(use_daemon=args.daemon)
+            board = BalanceBoard(address=args.address, use_daemon=args.daemon)
             board.toggle_led()
             print("LED toggled.")
         except Exception as e:
