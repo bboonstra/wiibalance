@@ -66,11 +66,12 @@ WantedBy=default.target
 def main():
     parser = argparse.ArgumentParser(prog="wiibalance", description="Wii Balance Board CLI")
 
+    shared_parser = argparse.ArgumentParser(add_help=False)
     daemon_group = parser.add_mutually_exclusive_group()
     daemon_group.add_argument("--daemon", action="store_true", default=None, help="Force daemon mode")
     daemon_group.add_argument("--no-daemon", action="store_false", dest="daemon", help="Force direct Bluetooth mode")
+    shared_parser.add_argument("-a", "--address", type=str, default=None, help="Bluetooth MAC address of the Wii Balance Board")
 
-    parser.add_argument("-a", "--address", type=str, default=None, help="Mac/Bluetooth address of the Wii Balance Board")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Service commands
@@ -90,7 +91,7 @@ def main():
     # Route commands
     if args.command == "service":
         if args.action == "setup":
-            setup_daemon()
+            setup_daemon(address=args.address)
         elif args.action == "status":
             subprocess.run(["systemctl", "--user", "status", "wiibalanced.service"])
 
