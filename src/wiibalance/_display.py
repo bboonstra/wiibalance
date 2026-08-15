@@ -120,12 +120,12 @@ class LiveDisplay:
         body = [
             f"┌────────────────────────────────────────────┐\033[K",
             f"│ {C.BOLD}Weight{C.RESET} {weights.total:7.2f} kg   "
-            f"{C.GREY}[{spark}]{C.RESET}      │\033[K",
+            f"{C.GREY}[{spark}]{C.RESET}  │\033[K",
             f"│ CoP  x{C.CYAN}{cop_x:+5.2f}{C.RESET} "
             f"y{C.CYAN}{cop_y:+5.2f}{C.RESET}   "
-            f"Stability: {self._stability_label()}      │\033[K",
+            f"Stability: {self._stability_label()}     │\033[K",
             f"│ Battery {battery_bar(battery_pct)} {min(battery_pct, 100):3d}%   "
-            f"Button: {btn}          │\033[K",
+            f"Button: {btn}       │\033[K",
             f"├────────────────────────────────────────────┤\033[K",
             f"│ TL {quadrant_heat(weights.topleft, max_quad)}  "
             f"TR {quadrant_heat(weights.topright, max_quad)}"
@@ -134,11 +134,11 @@ class LiveDisplay:
             f"BR {quadrant_heat(weights.bottomright, max_quad)}"
             f"   {weights.bottomleft:5.1f}kg {weights.bottomright:5.1f}kg │\033[K",
             f"├────────────────────────────────────────────┤\033[K",
-            f"│{'[FRONT]'.center(48)}│\033[K",
+            f"│{'[FRONT]'.center(46)}│\033[K",
         ]
         for row in grid:
-            body.append(f"│  {' '.join(row)}  │\033[K")
-        body.append(f"│{'[BACK]'.center(48)}│\033[K")
+            body.append(f"│{(' '.join(row)).center(46)}│\033[K")
+        body.append(f"│{'[BACK]'.center(46)}│\033[K")
         body.append(f"└────────────────────────────────────────────┘\033[K")
         body.append(f"  {C.GREY}(Press Ctrl+C to exit){C.RESET}\033[K")
 
