@@ -2,7 +2,7 @@
 
 The modern Python controller for the Wii Balance Board.
 
-![Linux](https://img.shields.io/badge/Linux%20Only-1793d1) ![PyPI Version](https://img.shields.io/pypi/v/wiibalance)
+![Linux](https://img.shields.io/badge/Linux%20Only-1793d1) [![PyPI Version](https://img.shields.io/pypi/v/wiibalance)](https://pypi.org/project/wiibalance/)
 
 
 ![wiibalance](https://bboonstra.dev/wiibalance.gif)

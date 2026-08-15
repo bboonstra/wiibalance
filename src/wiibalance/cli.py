@@ -101,6 +101,7 @@ def main():
                     # UNCHANGED shape/keys — stays compatible with existing consumers
                     data = {
                         "total": round(weights.total, 2),
+                        "compensated": round(state.compensated_weight, 2),
                         "topleft": round(weights.topleft, 2),
                         "topright": round(weights.topright, 2),
                         "bottomleft": round(weights.bottomleft, 2),
@@ -109,6 +110,9 @@ def main():
                         "center_of_pressure_y": cop_y,
                         "button": state.button,
                         "battery": state.battery_percent,
+                        "battery_bars": state.battery_bars,
+                        "led": state.led,
+                        "timestamp": time.time(),
                     }
                     print(json.dumps(data))
                 else:
