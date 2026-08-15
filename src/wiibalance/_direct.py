@@ -54,6 +54,8 @@ class _DirectBalanceBoard:
             self.disconnect()
             raise RuntimeError(f"Connected to {DEVICE_NAME}, but timed out waiting for data packets.")
 
+        self.led_on()
+
     # ---------------------------------------------------------------
     # Bluetooth
     # ---------------------------------------------------------------
