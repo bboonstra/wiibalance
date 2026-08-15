@@ -5,8 +5,9 @@ from wiibalance.models import *
 
 
 class _DirectBalanceBoard:
-    def __init__(self, address: str | None = None):
+    def __init__(self, address: str | None = None, timeout: int = 5):
         self.address = address or self.discover()
+        self.timeout = timeout
         if self.address is None:
             raise BoardNotFoundError(f"{DEVICE_NAME} not found")
 
@@ -21,13 +22,13 @@ class _DirectBalanceBoard:
             [10000] * 4,
             [10000] * 4,
             [10000] * 4,
-            ]
+        ]
 
         self.calibration_completed = [False, False]
 
         self._weights = Weights(
-            0, 0, 0, 0,
-            0, 0, 0, 0,
+            -1, -1, -1, -1,
+            -1, -1, -1, -1
         )
 
         self._button = False
@@ -79,7 +80,9 @@ class _DirectBalanceBoard:
 
     def connect(self) -> None:
         self.send_sock = self._l2cap_socket()
+        self.send_sock.settimeout(self.timeout)
         self.recv_sock = self._l2cap_socket()
+        self.recv_sock.settimeout(self.timeout)
 
         try:
             self.recv_sock.connect(
