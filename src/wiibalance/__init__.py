@@ -1,9 +1,8 @@
-import json
 import sys
-from pathlib import Path
 from wiibalance._direct import _DirectBalanceBoard
 from wiibalance._client import _DaemonBalanceBoard
-from wiibalance.config import Weights, BoardNotFoundError, DaemonNotRunningError, PlatformNotSupportedError
+from wiibalance.config import Weights, BoardNotFoundError, DaemonNotRunningError, PlatformNotSupportedError, load_config
+
 
 # noinspection pep8-naming
 def BalanceBoard(address: str | None = None, use_daemon: bool | None = None):
@@ -14,16 +13,17 @@ def BalanceBoard(address: str | None = None, use_daemon: bool | None = None):
     if not sys.platform.startswith('linux'):
         raise PlatformNotSupportedError("WiiBalance only supports Linux systems.")
 
-    config = _load_config()
+    conf = load_config()
 
     # Explicit argument overrides config file
-    should_use_daemon = use_daemon if use_daemon is not None else config.get("daemon_enabled", False)
+    should_use_daemon = use_daemon if use_daemon is not None else conf.get("daemon_enabled", False)
 
     if should_use_daemon:
         return _DaemonBalanceBoard()
     else:
-        target_address = address or config.get("address")
+        target_address = address or conf.get("address")
         return _DirectBalanceBoard(address=target_address)
+
 
 # Expose these to users who import wiibalance
 __all__ = ["BalanceBoard", "Weights", "BoardNotFoundError", "DaemonNotRunningError", "PlatformNotSupportedError"]

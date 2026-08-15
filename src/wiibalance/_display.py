@@ -83,6 +83,7 @@ class LiveDisplay:
     GRID_COLS, GRID_ROWS = 11, 5  # higher-res than the old 5x3
 
     def __init__(self, history_len=40, trail_len=6):
+        self._prev_line_count = None
         self._frame = 0
         self.weight_history = deque(maxlen=history_len)
         self.cop_trail = deque(maxlen=trail_len)  # most recent last
