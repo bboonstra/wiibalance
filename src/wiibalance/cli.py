@@ -46,7 +46,7 @@ def main():
 
     conf_parser = subparsers.add_parser("config", help="Configure the daemon")
     conf_parser.add_argument("action", choices=["set", "get", "reset"])
-    conf_parser.add_argument("key", type=str, help="Configuration key")
+    conf_parser.add_argument("key", type=str, nargs="?", help="Configuration key")
     conf_parser.add_argument("value", type=str, nargs="?", help="Configuration value")
 
     args = parser.parse_args()
@@ -157,8 +157,14 @@ def main():
         try:
             config = load_config()
             if args.action == "set":
+                if not args.key:
+                    print("Error: a key is required for set action")
+                    return
                 config[args.key] = args.value
             elif args.action == "get":
+                if not args.key:
+                    print(json.dumps(config, indent=4))
+                    return
                 print(config.get(args.key, "(not set)"))
             elif args.action == "reset":
                 if args.key:
