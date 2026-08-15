@@ -20,9 +20,9 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # Service commands (inherit shared_parser so -a/--address and daemon flags work)
-    service_parser = subparsers.add_parser("service", parents=[shared_parser], help="Manage the background daemon")
-    service_parser.add_argument("action", choices=["setup", "status", "start", "stop", "restart", "remove"])
+    # Daemon commands (inherit shared_parser so -a/--address and daemon flags work)
+    daemon_parser = subparsers.add_parser("daemon", parents=[shared_parser], help="Manage the background daemon")
+    daemon_parser.add_argument("action", choices=["setup", "status", "start", "stop", "restart", "remove"])
 
     # Interaction commands (inherits shared_parser so -a/--address and daemon flags work here too)
     subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
@@ -38,7 +38,7 @@ def main():
         raise PlatformNotSupportedError("WiiBalance only supports Linux systems.")
 
     # Route commands
-    if args.command == "service":
+    if args.command == "daemon":
         if args.action == "setup":
             setup_daemon(address=args.address)
         elif args.action == "status":
