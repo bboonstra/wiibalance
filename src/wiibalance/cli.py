@@ -139,7 +139,7 @@ def main():
                         "battery": state.battery_percent,
                         "battery_bars": state.battery_bars,
                         "led": state.led,
-                        "unit": "kg" if load_config().get('units') == 'metric' else 'lbs',
+                        "unit": "lb" if load_config().get('units') == 'imperial' else 'kg',
                         "timestamp": time.time(),
                     }
                     print(json.dumps(data))

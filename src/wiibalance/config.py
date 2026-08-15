@@ -11,7 +11,11 @@ DEFAULT_CONFIG = {"daemon_enabled": False, "address": None, "units": "metric"}
 def load_config() -> dict:
     if CONFIG_PATH.exists():
         try:
-            return json.loads(CONFIG_PATH.read_text())
+            conf = json.loads(CONFIG_PATH.read_text())
+            for key, value in DEFAULT_CONFIG.items():
+                if key not in conf:
+                    conf[key] = value
+            return conf
         except json.JSONDecodeError:
             pass
     return DEFAULT_CONFIG

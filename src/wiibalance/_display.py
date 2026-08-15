@@ -138,7 +138,7 @@ class LiveDisplay:
         max_quad = max(state.weights.top_left, state.weights.top_right,
                        state.weights.bottom_left, state.weights.bottom_right, 1.0)
         btn = f"{C.BR_YELLOW}{C.BOLD}PRESSED{C.RESET}" if state.button else f"{C.GREY}up{C.RESET}     "
-        weight_unit = "kg" if load_config().get('units') == 'metric' else 'lbs'
+        weight_unit = "lb" if load_config().get('units') == 'imperial' else 'kg'
 
         body = [
             f"┌────────────────────────────────────────────┐\033[K",
