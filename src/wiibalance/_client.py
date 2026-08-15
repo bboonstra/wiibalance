@@ -1,10 +1,10 @@
 import socket
 import json
-from .state import BoardState
+from .state import BoardState, BalanceBoard
 from .config import Weights, DaemonNotRunningError, SOCKET_PATH
 
 
-class _DaemonBalanceBoard:
+class _DaemonBalanceBoard(BalanceBoard):
     def __init__(self):
         self.read_state()  # ping on init to fail fast if daemon's unreachable
 

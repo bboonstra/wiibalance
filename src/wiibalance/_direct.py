@@ -20,10 +20,10 @@ from .config import (
     BoardNotFoundError,
     Weights, COMMAND_TEMP_CALIBRATION,
 )
-from .state import BoardState
+from .state import BoardState, BalanceBoard
 
 
-class _DirectBalanceBoard:
+class _DirectBalanceBoard(BalanceBoard):
     def __init__(self, address: str | None = None, timeout: int = 5):
         self.address = address or self.discover()
         self.timeout = timeout

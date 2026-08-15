@@ -30,7 +30,7 @@ Installing WiiBalance is incredibly easy :)
 pip install wiibalance
 ```
 
-## Usage
+## CLI Usage
 
 You'll want to install the WiiBalance daemon so that you don't have to re-pair your board after every command. Identify
 your board by its Bluetooth address and run the following command:
@@ -95,7 +95,16 @@ $ wiibalance daemon status
 $ wiibalance daemon start
 ```
 
-In-depth docs coming soon!
+## Python Usage
+
+```python
+>>> from wiibalance import BalanceBoard
+>>> board = BalanceBoard("<INSERT ADDRESS>")
+>>> print(w)
+BoardState(weights=Weights(topright=0.6427765237020316, topleft=0.0, bottomright=0.14455782312925172, bottomleft=0.0, raw_topright=16760, raw_topleft=19841, raw_bottomright=20064, raw_bottomleft=3400), button=False, led=True, connected=True, battery_raw=112, temperature_raw=26, reference_temperature=None)
+>>> board.disconnect()
+>>> exit()
+```
 
 ## Issues & Contributing
 Please open an issue or submit a pull request! :)

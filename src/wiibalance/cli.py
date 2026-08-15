@@ -3,7 +3,7 @@ import json
 import subprocess
 import sys
 import time
-from wiibalance import BalanceBoard, PlatformNotSupportedError
+from wiibalance import create_balance_board, PlatformNotSupportedError
 from wiibalance._display import LiveDisplay
 from wiibalance.daemon import setup_daemon, teardown_daemon
 
@@ -54,7 +54,7 @@ def main():
 
     elif args.command == "weight":
         try:
-            board = BalanceBoard(address=args.address, use_daemon=args.daemon)
+            board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
             print(f"Total Weight: {state.weights.total:.2f}")
         except Exception as e:
@@ -62,7 +62,7 @@ def main():
 
     elif args.command == "cop":
         try:
-            board = BalanceBoard(address=args.address, use_daemon=args.daemon)
+            board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
             print(f"Center of Pressure: {state.weights.center_of_pressure}")
         except Exception as e:
@@ -70,7 +70,7 @@ def main():
 
     elif args.command == "led":
         try:
-            board = BalanceBoard(address=args.address, use_daemon=args.daemon)
+            board = create_balance_board(address=args.address, use_daemon=args.daemon)
             if args.on:
                 board.led_on()
                 print("LED turned on.")
@@ -88,7 +88,7 @@ def main():
 
     elif args.command == "live":
         try:
-            board = BalanceBoard(address=args.address, use_daemon=args.daemon)
+            board = create_balance_board(address=args.address, use_daemon=args.daemon)
             dashboard = LiveDisplay()
 
             while True:
