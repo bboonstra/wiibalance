@@ -102,6 +102,13 @@ def main():
         except Exception as e:
             print(f"Error: {e}")
 
+    elif args.command == "cop":
+        try:
+            board = BalanceBoard(address=args.address, use_daemon=args.daemon)
+            print(f"Center of Pressure: {board.weights.center_of_pressure}")
+        except Exception as e:
+            print(f"Error: {e}")
+
     elif args.command == "led":
         try:
             board = BalanceBoard(address=args.address, use_daemon=args.daemon)

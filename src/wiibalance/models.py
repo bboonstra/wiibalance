@@ -41,6 +41,36 @@ class Weights:
     raw_bottomleft: int
 
     @property
+    def center_of_pressure(self) -> tuple[float, float]:
+        """
+        Calculate normalized center of pressure.
+
+        x:
+            -1 = left
+            +1 = right
+
+        y:
+            -1 = bottom
+            +1 = top
+        """
+
+        total = self.total
+
+        if total <= 0:
+            return (0.0, 0.0)
+
+        left = self.topleft + self.bottomleft
+        right = self.topright + self.bottomright
+
+        top = self.topleft + self.topright
+        bottom = self.bottomleft + self.bottomright
+
+        x = (right - left) / total
+        y = (top - bottom) / total
+
+        return (x, y)
+
+    @property
     def total(self) -> float:
         return self.topright + self.topleft + self.bottomright + self.bottomleft
 
