@@ -1,8 +1,9 @@
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
-from wiibalance import BalanceBoard
+from wiibalance import BalanceBoard, PlatformNotSupportedError
 from wiibalance._direct import _DirectBalanceBoard
 
 CONFIG_DIR = Path.home() / ".config" / "wiibalance"
@@ -69,19 +70,22 @@ def main():
     daemon_group.add_argument("--daemon", action="store_true", default=None, help="Force daemon mode")
     daemon_group.add_argument("--no-daemon", action="store_false", dest="daemon", help="Force direct Bluetooth mode")
 
-    parser.add_argument("--address", help="Bluetooth address of the board", default=None)
+    parser.add_argument("-a", "--address", type=str, default=None, help="Mac/Bluetooth address of the Wii Balance Board")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Service commands
     service_parser = subparsers.add_parser("service", help="Manage the background daemon")
     service_parser.add_argument("action", choices=["setup", "status"])
-    service_parser.add_argument("--address", help="Bluetooth address of the board")
+    service_parser.add_argument("-address", help="Bluetooth address of the board")
 
     # Interaction commands
     subparsers.add_parser("weight", help="Read current total weight")
     subparsers.add_parser("led", help="Toggle the board LED")
 
     args = parser.parse_args()
+
+    if not sys.platform.startswith('linux'):
+        raise PlatformNotSupportedError("WiiBalance only supports Linux systems.")
 
     # Route commands
     if args.command == "service":

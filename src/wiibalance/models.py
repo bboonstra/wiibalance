@@ -25,6 +25,9 @@ class BoardNotFoundError(Exception):
 class DaemonNotRunningError(Exception):
     pass
 
+class PlatformNotSupportedError(Exception):
+    pass
+
 @dataclass
 class Weights:
     topright: float

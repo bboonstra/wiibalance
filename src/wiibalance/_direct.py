@@ -51,7 +51,6 @@ class _DirectBalanceBoard:
         """
         Discover the Balance Board using BlueZ's bluetoothctl.
         """
-
         result = subprocess.run(
             ["bluetoothctl", "devices"],
             capture_output=True,

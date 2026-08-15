@@ -1,8 +1,9 @@
 import json
+import sys
 from pathlib import Path
 from wiibalance._direct import _DirectBalanceBoard
 from wiibalance._client import _DaemonBalanceBoard
-from wiibalance.models import Weights, BoardNotFoundError, DaemonNotRunningError
+from wiibalance.models import Weights, BoardNotFoundError, DaemonNotRunningError, PlatformNotSupportedError
 
 CONFIG_PATH = Path.home() / ".config" / "wiibalance" / "config.json"
 
@@ -19,6 +20,9 @@ def BalanceBoard(address: str | None = None, use_daemon: bool | None = None):
     Factory function that returns either a direct Bluetooth connection
     or a thin client connecting to the background daemon.
     """
+    if not sys.platform.startswith('linux'):
+        raise PlatformNotSupportedError("WiiBalance only supports Linux systems.")
+
     config = _load_config()
 
     # Explicit argument overrides config file
