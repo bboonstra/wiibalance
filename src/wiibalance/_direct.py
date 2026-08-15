@@ -2,8 +2,8 @@ import socket
 import subprocess
 import threading
 
-from . import load_config
 from .config import (
+    load_config,
     COMMAND_CALIBRATION,
     COMMAND_LED,
     COMMAND_REPORTING,
@@ -150,7 +150,7 @@ class DirectBalanceBoard(BalanceBoard):
         self.send_sock = None
         self.recv_sock = None
 
-# ---------------------------------------------------------------
+    # ---------------------------------------------------------------
     # Communication
     # ---------------------------------------------------------------
 
@@ -211,7 +211,7 @@ class DirectBalanceBoard(BalanceBoard):
     # ---------------------------------------------------------------
 
     def _parse_calibration(self, packet: bytes) -> None:
-        if packet[4] & 0x0F:          # low nibble = read-error flag
+        if packet[4] & 0x0F:  # low nibble = read-error flag
             return
 
         payload_length = packet[4] // 16 + 1
@@ -244,9 +244,9 @@ class DirectBalanceBoard(BalanceBoard):
     # ---------------------------------------------------------------
 
     def _parse_sample(
-        self,
-        value: int,
-        position: int,
+            self,
+            value: int,
+            position: int,
     ) -> float:
 
         zero = self.calibration[0][position]
@@ -262,8 +262,8 @@ class DirectBalanceBoard(BalanceBoard):
         return 17.0 + 17.0 * ((value - seventeen) / (thirty_four - seventeen))
 
     def _parse_sample_packet(
-        self,
-        packet: bytes,
+            self,
+            packet: bytes,
     ) -> Weights:
 
         if len(packet) < 12:
@@ -271,7 +271,7 @@ class DirectBalanceBoard(BalanceBoard):
 
         raw = [
             int.from_bytes(
-                packet[offset : offset + 2],
+                packet[offset: offset + 2],
                 "big",
             )
             for offset in (4, 6, 8, 10)
@@ -340,14 +340,14 @@ class DirectBalanceBoard(BalanceBoard):
                     if new_button != self._button:
                         self._button = new_button
                         for callback in self.on_button_change:
-                                callback(self.read_state())
+                            callback(self.read_state())
 
                         if new_button:
                             for callback in self.on_button_press:
-                                    callback(self.read_state())
+                                callback(self.read_state())
                         else:
                             for callback in self.on_button_release:
-                                    callback(self.read_state())
+                                callback(self.read_state())
 
                     if not self._first_packet_received.is_set():
                         self._first_packet_received.set()
