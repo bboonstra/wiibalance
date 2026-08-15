@@ -86,7 +86,9 @@ def main():
     # Interaction commands (inherits shared_parser so -a/--address and daemon flags work here too)
     subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
     subparsers.add_parser("cop", parents=[shared_parser], help="Read current center of pressure")
-    subparsers.add_parser("led", parents=[shared_parser], help="Toggle the board LED")
+    led_parser = subparsers.add_parser("led", parents=[shared_parser], help="Toggle the board LED")
+    led_parser.add_argument("--on", action="store_true", help="Turn LED on")
+    led_parser.add_argument("--off", action="store_true", help="Turn LED off")
     live_parser = subparsers.add_parser("live", parents=[shared_parser], help="Stream live stats from the board")
     live_parser.add_argument("--json", action="store_true", help="Output stream as JSON lines")
     args = parser.parse_args()
@@ -118,7 +120,17 @@ def main():
     elif args.command == "led":
         try:
             board = BalanceBoard(address=args.address, use_daemon=args.daemon)
-            board.toggle_led()
+            if args.on:
+                board.led_on()
+                print("LED turned on.")
+                return
+            elif args.off:
+                board.led_off()
+                print("LED turned off.")
+                return
+            else:
+                board.toggle_led()
+                print(f"LED is now {board.led and 'on' or 'off'}")
             print("LED toggled.")
         except Exception as e:
             print(f"Error: {e}")
