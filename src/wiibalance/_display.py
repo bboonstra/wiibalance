@@ -133,7 +133,7 @@ class LiveDisplay:
         spark = sparkline(self.weight_history, width=20)
         max_quad = max(weights.topleft, weights.topright,
                        weights.bottomleft, weights.bottomright, 1.0)
-        btn = f"{C.BR_YELLOW}{C.BOLD}PRESSED{C.RESET}" if button else f"{C.GREY}up{C.RESET}"
+        btn = f"{C.BR_YELLOW}{C.BOLD}PRESSED{C.RESET}" if button else f"{C.GREY}up{C.RESET}     "
 
         body = [
             f"┌────────────────────────────────────────────┐\033[K",
@@ -143,7 +143,7 @@ class LiveDisplay:
             f"y{C.CYAN}{cop_y:+5.2f}{C.RESET}   "
             f"Stability: {self._stability_label()}     │\033[K",
             f"│ Battery {battery_bar(battery_pct)} {min(battery_pct, 100):3d}%   "
-            f"Button: {btn}       │\033[K",
+            f"Button: {btn}  │\033[K",
             f"├────────────────────────────────────────────┤\033[K",
             f"│ TL {quadrant_heat(weights.topleft, max_quad)}  "
             f"TR {quadrant_heat(weights.topright, max_quad)}"
