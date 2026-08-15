@@ -111,25 +111,20 @@ class LiveDisplay:
         self.weight_history.append(weights.total or 0.0)
         self.cop_trail.append((cop_x, cop_y))
 
-        cursor_reset = f"\033[{self.NUM_LINES}A" if self._frame > 0 else ""
-        self._frame += 1
-
         grid = self._grid(cop_x, cop_y)
         spark = sparkline(self.weight_history, width=20)
         max_quad = max(weights.topleft, weights.topright,
                        weights.bottomleft, weights.bottomright, 1.0)
-
         btn = f"{C.BR_YELLOW}{C.BOLD}PRESSED{C.RESET}" if button else f"{C.GREY}up{C.RESET}"
 
-        lines = [
-            f"{cursor_reset}",
+        body = [
             f"┌────────────────────────────────────────────┐\033[K",
             f"│ {C.BOLD}Weight{C.RESET} {weights.total:7.2f} kg   "
             f"{C.GREY}[{spark}]{C.RESET}      │\033[K",
             f"│ CoP  x{C.CYAN}{cop_x:+5.2f}{C.RESET} "
             f"y{C.CYAN}{cop_y:+5.2f}{C.RESET}   "
             f"Stability: {self._stability_label()}      │\033[K",
-            f"│ Battery {battery_bar(battery_pct)} {battery_pct:3d}%   "
+            f"│ Battery {battery_bar(battery_pct)} {min(battery_pct, 100):3d}%   "
             f"Button: {btn}          │\033[K",
             f"├────────────────────────────────────────────┤\033[K",
             f"│ TL {quadrant_heat(weights.topleft, max_quad)}  "
@@ -142,10 +137,19 @@ class LiveDisplay:
             f"│{'[FRONT]'.center(48)}│\033[K",
         ]
         for row in grid:
-            lines.append(f"│  {' '.join(row)}  │\033[K")
-        lines.append(f"│{'[BACK]'.center(48)}│\033[K")
-        lines.append(f"└────────────────────────────────────────────┘\033[K")
-        lines.append(f"  {C.GREY}(Press Ctrl+C to exit){C.RESET}\033[K")
+            body.append(f"│  {' '.join(row)}  │\033[K")
+        body.append(f"│{'[BACK]'.center(48)}│\033[K")
+        body.append(f"└────────────────────────────────────────────┘\033[K")
+        body.append(f"  {C.GREY}(Press Ctrl+C to exit){C.RESET}\033[K")
 
-        sys.stdout.write("\n".join(lines) + "\n")
+        # Move up by exactly what the *previous* frame actually printed,
+        # not a hardcoded constant — and land at column 0 so drift can't
+        # accumulate horizontally either.
+        if self._frame > 0:
+            sys.stdout.write(f"\033[{self._prev_line_count}A\r")
+
+        sys.stdout.write("\n".join(body) + "\n")
         sys.stdout.flush()
+
+        self._prev_line_count = len(body)
+        self._frame += 1
