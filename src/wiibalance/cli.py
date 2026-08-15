@@ -143,11 +143,42 @@ def main():
                     }
                     print(json.dumps(data))
                 else:
+                    # Map CoP range [-1.0, 1.0] to a 5-column by 3-row grid index
+                    # X: -1 (left) to +1 (right) -> columns 0 to 4
+                    # Y: -1 (back) to +1 (front) -> rows 0 (front) to 2 (back)
+                    GRID_COLS, GRID_ROWS = 5, 3
+
+                    col = int(round(min(max(cop_x, -1.0), 1.0) * 2) + 2)
+                    row = int(round(-min(max(cop_y, -1.0), 1.0) * 1) + 1)  # Invert Y for screen rendering
+
+                    # Re-clamp after rounding so a future scale/offset change can't index out of bounds
+                    col = max(0, min(GRID_COLS - 1, col))
+                    row = max(0, min(GRID_ROWS - 1, row))
+
+                    # Build the 3-row text grid (5:3 visual box representation)
+                    grid_rows = [["·", "·", "·", "·", "·"] for _ in range(GRID_ROWS)]
+                    grid_rows[row][col] = "O"
+
+                    # Guard against missing/late sensor data so one bad frame doesn't kill the loop
+                    total_weight = getattr(weights, "total", 0.0) or 0.0
+                    battery_pct = getattr(board, "battery", 0) or 0
+
+                    # Render text dashboard cleanly using ANSI cursor restore (\033[u)
+                    # Note: \033[u requires a matching \033[s (save cursor) earlier, once, before the loop starts.
                     output = (
-                        f"\r[Total: {weights.total:6.2f}kg] | "
-                        f"(X: {cop_x:+.2f}, Y: {cop_y:+.2f}) | "
-                        f"Button: {board.button} | Battery: {board.battery}% "
-                        f"\033[K"
+                        f"\033[u"  # Restore cursor to saved top position
+                        f"┌─────────────────────────┐\033[K\n"
+                        f"│  Weight: {total_weight:6.2f} kg      │\033[K\n"
+                        f"│  CoP X: {cop_x:+5.2f} Y: {cop_y:+5.2f}   │\033[K\n"
+                        f"│  Battery: {battery_pct:3d}%           │\033[K\n"
+                        f"├─────────────────────────┤\033[K\n"
+                        f"│       [FRONT]           │\033[K\n"
+                        f"│     {grid_rows[0][0]} {grid_rows[0][1]} {grid_rows[0][2]} {grid_rows[0][3]} {grid_rows[0][4]}           │\033[K\n"
+                        f"│     {grid_rows[1][0]} {grid_rows[1][1]} {grid_rows[1][2]} {grid_rows[1][3]} {grid_rows[1][4]}  [CoP]    │\033[K\n"
+                        f"│     {grid_rows[2][0]} {grid_rows[2][1]} {grid_rows[2][2]} {grid_rows[2][3]} {grid_rows[2][4]}           │\033[K\n"
+                        f"│       [BACK]            │\033[K\n"
+                        f"└─────────────────────────┘\033[K\n"
+                        f"  (Press Ctrl+C to exit)\033[K"
                     )
                     sys.stdout.write(output)
                     sys.stdout.flush()
@@ -155,7 +186,7 @@ def main():
                 time.sleep(0.05) # ~20 FPS refresh rate
 
         except KeyboardInterrupt:
-            print("\nExiting live stream.")
+            return
         except Exception as e:
             print(f"\nError: {e}")
 
