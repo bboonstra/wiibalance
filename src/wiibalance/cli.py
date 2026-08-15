@@ -73,7 +73,7 @@ def main():
         try:
             board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
-            print(f"Total Weight: {state.calibrated_weight:.2f}")
+            print(f"Total Weight: {state.weights.total:.2f}")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -161,21 +161,22 @@ def main():
                     print("Error: a key is required for set action")
                     return
                 config[args.key] = args.value
+                write_config(config)
+                print(f"Updated config:\n{json.dumps(load_config(), indent=4)}")
+
             elif args.action == "get":
                 if not args.key:
                     print(json.dumps(config, indent=4))
                     return
                 print(config.get(args.key, "(not set)"))
+
             elif args.action == "reset":
                 if args.key:
                     del config[args.key]
                 else:
                     config.clear()
-
-            write_config(config)
-
-            print(f"Updated config:\n {json.dumps(load_config(), indent=4)}")
-
+                write_config(config)
+                print(f"Updated config:\n{json.dumps(load_config(), indent=4)}")
 
         except Exception as e:
             print(f"Error: {e}")

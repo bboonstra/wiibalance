@@ -129,7 +129,7 @@ class LiveDisplay:
         return f"{C.BR_RED}wobbly{C.RESET}"
 
     def render(self, state: BoardState):
-        self.weight_history.append(state.calibrated_weight or 0.0)
+        self.weight_history.append(state.weights.total or 0.0)
         cop_x, cop_y = state.weights.center_of_pressure
         self.cop_trail.append((cop_x, cop_y))
 
@@ -142,7 +142,7 @@ class LiveDisplay:
 
         body = [
             f"┌────────────────────────────────────────────┐\033[K",
-            f"│ {C.BOLD}Weight{C.RESET} {state.calibrated_weight:7.2f} {weight_unit}   "
+            f"│ {C.BOLD}Weight{C.RESET} {state.weights.total:7.2f} {weight_unit}   "
             f"{C.GREY}[{spark}]{C.RESET} │\033[K",
             f"│ CoP  x{C.CYAN}{cop_x:+5.2f}{C.RESET} "
             f"y{C.CYAN}{cop_y:+5.2f}{C.RESET}   "

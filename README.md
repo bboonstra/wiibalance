@@ -4,7 +4,6 @@ The modern Python controller for the Wii Balance Board.
 
 ![Linux](https://img.shields.io/badge/Linux%20Only-1793d1) [![PyPI Version](https://img.shields.io/pypi/v/wiibalance)](https://pypi.org/project/wiibalance/)
 
-
 ![wiibalance](https://bboonstra.dev/wiibalance.gif)
 
 ## Features
@@ -69,11 +68,13 @@ The center of pressure is the point where the user's weight "is" on the board. I
 and -1 to 1 bottom to top (Y) such that (0, 0) is the center of the board.
 
 ### Control LED
+
 ```bash
 $ wiibalance led --on
 $ wiibalance led --off
 $ wiibalance led # toggle
 ```
+
 Pretty straightforward.
 
 ### Daemon
@@ -95,16 +96,30 @@ $ wiibalance daemon status
 $ wiibalance daemon start
 ```
 
+### Configure
+
+You can get, set, and reset your configuration with `wiibalance config`.
+
+```bash
+$ wiibalance config get
+{
+    "daemon_enabled": "false",
+    "address": null,
+    "units": "metric"
+}
+```
+
 ## Python Usage
 
 ```python
->>> from wiibalance import BalanceBoard
->>> board = BalanceBoard("<INSERT ADDRESS>")
->>> print(w)
-BoardState(weights=Weights(topright=0.6427765237020316, topleft=0.0, bottomright=0.14455782312925172, bottomleft=0.0, raw_topright=16760, raw_topleft=19841, raw_bottomright=20064, raw_bottomleft=3400), button=False, led=True, connected=True, battery_raw=112, temperature_raw=26, reference_temperature=None)
->>> board.disconnect()
->>> exit()
+from wiibalance import create_balance_board
+
+board = create_balance_board("<INSERT ADDRESS>")
+print(board.read_state())
+board.disconnect()
+exit()
 ```
 
 ## Issues & Contributing
+
 Please open an issue or submit a pull request! :)
