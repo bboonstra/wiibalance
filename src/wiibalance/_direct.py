@@ -271,14 +271,14 @@ class _DirectBalanceBoard:
         ]
 
         return Weights(
-            values[0],
-            values[1],
-            values[2],
-            values[3],
-            raw[0],
-            raw[1],
-            raw[2],
-            raw[3],
+            topright=values[POSITION_TOPRIGHT],
+            topleft=values[POSITION_TOPLEFT],
+            bottomright=values[POSITION_BOTTOMRIGHT],
+            bottomleft=values[POSITION_BOTTOMLEFT],
+            raw_topright=raw[POSITION_TOPRIGHT],
+            raw_topleft=raw[POSITION_TOPLEFT],
+            raw_bottomright=raw[POSITION_BOTTOMRIGHT],
+            raw_bottomleft=raw[POSITION_BOTTOMLEFT],
         )
 
     # ---------------------------------------------------------------

@@ -143,6 +143,16 @@ def main():
                     }
                     print(json.dumps(data))
                 else:
+                    NUM_LINES = 11  # total lines in the dashboard block below — update if you add/remove a line
+
+                    # Move cursor to the top of the dashboard block before redrawing.
+                    # On the first frame there's nothing above yet, so skip the move.
+                    if getattr(main, "_frame_count", 0) > 0:
+                        cursor_reset = f"\033[{NUM_LINES}A"
+                    else:
+                        cursor_reset = ""
+                    main._frame_count = getattr(main, "_frame_count", 0) + 1
+
                     # Map CoP range [-1.0, 1.0] to a 5-column by 3-row grid index
                     # X: -1 (left) to +1 (right) -> columns 0 to 4
                     # Y: -1 (back) to +1 (front) -> rows 0 (front) to 2 (back)
@@ -163,10 +173,9 @@ def main():
                     total_weight = getattr(weights, "total", 0.0) or 0.0
                     battery_pct = getattr(board, "battery", 0) or 0
 
-                    # Render text dashboard cleanly using ANSI cursor restore (\033[u)
-                    # Note: \033[u requires a matching \033[s (save cursor) earlier, once, before the loop starts.
+                    # Render text dashboard cleanly, redrawing in place via cursor-up + per-line clear
                     output = (
-                        f"\033[u"  # Restore cursor to saved top position
+                        f"{cursor_reset}"
                         f"┌─────────────────────────┐\033[K\n"
                         f"│  Weight: {total_weight:6.2f} kg      │\033[K\n"
                         f"│  CoP X: {cop_x:+5.2f} Y: {cop_y:+5.2f}   │\033[K\n"
