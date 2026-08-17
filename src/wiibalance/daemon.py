@@ -118,18 +118,22 @@ def setup_daemon(address: str | None = None):
 
     # 2. Find the board
     if not address:
-        print("Searching for board... (Press the red sync button!)")
+        print("Searching for paired board...")
         address = DirectBalanceBoard.discover()
         if address:
             print(f"Found board at {address}")
         else:
-            print("Board not found. Try supplying the address manually with --address.")
+            print(
+                "Board not found. "
+                "Please reference the documentation: https://github.com/bboonstra/wiibalance#initial-setup")
             return
     else:
         print(f"Using specified address: {address}")
 
     # 3. Save config
-    config = {"daemon_enabled": True, "address": address}
+    config = read_config()
+    config["address"] = address
+    config["daemon_enabled"] = True
     write_config(config)
 
     # 4. Write systemd user service
@@ -161,7 +165,8 @@ WantedBy=default.target
         subprocess.run(["systemctl", "--user", "start", "wiibalanced.service"], check=True)
         print("Success! The WiiBalance Daemon is installed and running in the background.")
         print(
-            "You can now run Python scripts without pressing the sync button first; the daemon will automatically reconnect and stay connected.")
+            "You can now run Python scripts without pressing the sync button first;"
+            " the daemon will automatically reconnect and stay connected.")
         print("Manage the daemon: 'systemctl --user status wiibalanced.service'")
     except subprocess.CalledProcessError:
         print("Error: Could not configure systemd service. Are you running systemd?")
@@ -181,7 +186,8 @@ def teardown_daemon():
         config["daemon_enabled"] = False
         write_config(config)
         print(
-            "The WiiBalance Daemon has been removed. You will now need to press the sync button before using any WiiBalance command.")
+            "The WiiBalance Daemon has been removed and disabled. "
+            "You will now need to press the sync button before using any WiiBalance command.")
     except subprocess.CalledProcessError:
         print("Error: Could not remove systemd service. Are you running systemd?")
 

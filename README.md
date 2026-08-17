@@ -23,102 +23,76 @@ The modern Python controller for the Wii Balance Board.
 
 ## Installation
 
-Installing WiiBalance is incredibly easy :)
+Installing WiiBalance is incredibly easy!
+
+Make sure you have [Python 3.10+](https://www.python.org/downloads/) installed. Then, you'll need to install the package
+using pip:
 
 ```bash
+python3 -m pip install --upgrade pip
 pip install wiibalance
 ```
 
-## CLI Usage
+## Initial Setup
 
-You'll want to install the WiiBalance daemon so that you don't have to re-pair your board after every command. Identify
-your board by its Bluetooth address and run the following command:
+To use WiiBalance, you'll need to know the Bluetooth address of your Wii Balance Board. If you've connected to it
+before, WiiBalance can discover it for you, but it is heavily recommended to find it manually.
 
-```bash
-$ wiibalance daemon setup -a <address>
-```
+### Manual Pairing
 
-Now, you can use the CLI!
-
-### Live Demo
-
-To display a cool-looking visualization of the Wii Balance Board's current state, run
+1. Run the following command in your terminal. This will discover the Bluetooth address of your Wii Balance Board.
 
 ```bash
-$ wiibalance live
+bluetoothctl --timeout 20 scan on | grep --line-buffered "RVL-WBC-01"
 ```
 
-You can also use `--json` to get a clean JSON representation of the current state.
-
-### Read Weight
+2. While the command above is running, press the red SYNC button on the Wii Balance Board, within the battery
+   compartment. You may have to press it more than once.
+3. Save the outputted Bluetooth address of the Wii Balance Board (it looks like `XX:XX:XX:XX:XX:XX`) for later use. You
+   can then stop the command with `Ctrl+C`.
+4. Pair with the board, substituting the Bluetooth address you saved earlier:
 
 ```bash
-$ wiibalance weight
-Total Weight: 0.82
+bluetoothctl pair XX:XX:XX:XX:XX:XX
 ```
 
-### Read Position
+You are now ready to use WiiBalance!
+
+## CLI Quickstart
+
+If you just paired with the board, you can jump right into the live demo:
 
 ```bash
-$ wiibalance cop
-Center of Pressure: (1.0, 1.0)
+wiibalance live
 ```
 
-The center of pressure is the point where the user's weight "is" on the board. It is mapped -1 to 1 left to right (X)
-and -1 to 1 bottom to top (Y) such that (0, 0) is the center of the board.
+However, the connection is lost when you finish a command. When you run your next command, you must press the red SYNC
+button in the battery compartment again. To fix
+this, [set up the daemon](https://github.com/bboonstra/wiibalance/blob/main/docs/cli.md#daemon-setup)!
 
-### Control LED
+You can use the `--json` flag to get a stream of computer-readable live data. You can also use `wiibalance weight` to
+get the current weight with units.
 
-```bash
-$ wiibalance led --on
-$ wiibalance led --off
-$ wiibalance led # toggle
-```
+Full documentation is available [here](https://github.com/bboonstra/wiibalance/blob/main/docs/cli.md).
 
-Pretty straightforward.
+## Python Quickstart
 
-### Daemon
-
-The WiiBalance daemon manages your board connection in the background. It provides six commands:
-
-- `setup` - Configure the daemon with your board's Bluetooth address (run once)
-- `remove` - Remove the daemon configuration
-
-The following commands are convenient wrappers around systemctl:
-
-- `status` - Check if the daemon is running
-- `start` - Start the daemon service
-- `stop` - Stop the daemon service
-- `restart` - Restart the daemon service
-
-```bash
-$ wiibalance daemon status
-$ wiibalance daemon start
-```
-
-### Configure
-
-You can get, set, and reset your configuration with `wiibalance config`.
-
-```bash
-$ wiibalance config get
-{
-    "daemon_enabled": "false",
-    "address": null,
-    "units": "metric"
-}
-```
-
-## Python Usage
+If you paired [above](#manual-pairing), you're ready to use the library out-of-the-box.
 
 ```python
 from wiibalance import create_balance_board
 
-board = create_balance_board("<INSERT ADDRESS>")
+board = create_balance_board()
 print(board.read_state())
 board.disconnect()
 exit()
 ```
+
+Note that, if you are not using the daemon, `create_balance_board` will hang until after you press the red SYNC button
+in the battery compartment of the board. You will also need to press the red SYNC button again if you `disconnect` and
+attempt to reconnect. To fix this, [set up the daemon](https://github.com/bboonstra/wiibalance/blob/main/docs/cli.md#daemon-setup)!
+
+Full documentation is available [here](https://github.com/bboonstra/wiibalance/blob/main/docs/python.md).
 
 ## Issues & Contributing
 
