@@ -5,7 +5,7 @@ import subprocess
 import threading
 from pathlib import Path
 
-from .config import load_config, write_config, CriticallyLowBatteryError
+from .config import read_config, write_config, CriticallyLowBatteryError, BoardNotFoundError
 from ._direct import DirectBalanceBoard
 from .config import CONFIG_DIR
 
@@ -14,7 +14,7 @@ SOCKET_PATH = "/tmp/wiibalance.sock"
 
 class WiiBalanceDaemon:
     def __init__(self):
-        self.board = DirectBalanceBoard()
+        self.board = None  # Decoupled from init!
 
         self.server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
@@ -25,6 +25,19 @@ class WiiBalanceDaemon:
         os.chmod(SOCKET_PATH, 0o666)
         self.server.listen(5)
 
+    def _ensure_board_connected(self):
+        """Attempts to connect to the board if not already connected."""
+        if self.board is None:
+            try:
+                self.board = DirectBalanceBoard()
+                return True
+            except BoardNotFoundError:
+                self.board = None
+                return False
+        # If the board class has a way to check if it dropped connection, check it here
+        # e.g., if not self.board.connected: return self._reconnect()
+        return True
+
     def handle_client(self, conn):
         with conn:
             try:
@@ -34,6 +47,13 @@ class WiiBalanceDaemon:
 
                 request = json.loads(data.decode())
                 command = request.get("cmd")
+
+                # If it's a command that requires the board, ensure we are connected first
+                board_commands = ["GET_STATE", "LED_ON", "LED_OFF", "TOGGLE_LED", "DISCONNECT"]
+                if command in board_commands:
+                    if not self._ensure_board_connected():
+                        conn.sendall(json.dumps({"error": "BoardNotFound"}).encode())
+                        return
 
                 if command == "GET_STATE":
                     try:
@@ -49,6 +69,9 @@ class WiiBalanceDaemon:
                         }
                     except CriticallyLowBatteryError as e:
                         response = {"error": str(e)}
+                    # You might also want to catch exceptions here if the board disconnects mid-read
+                    # and set self.board = None so it tries to reconnect next time.
+
                     conn.sendall(json.dumps(response).encode())
 
                 elif command == "LED_ON":
@@ -63,6 +86,14 @@ class WiiBalanceDaemon:
                     self.board.toggle_led()
                     conn.sendall(json.dumps({"status": "ok"}).encode())
 
+                elif command == "DISCONNECT":
+                    conn.sendall(json.dumps({"status": "ok"}).encode())
+                    self.board.disconnect()
+                    self.board = None  # Reset the board state
+
+                else:
+                    conn.sendall(json.dumps({"error": f"Unknown command: {command}"}).encode())
+
             except Exception as e:
                 conn.sendall(json.dumps({"error": str(e)}).encode())
 
@@ -74,7 +105,8 @@ class WiiBalanceDaemon:
                 threading.Thread(target=self.handle_client, args=(conn,), daemon=True).start()
         except KeyboardInterrupt:
             print("Shutting down daemon...")
-            self.board.disconnect()
+            if self.board is not None:
+                self.board.disconnect()
             os.remove(SOCKET_PATH)
 
 
@@ -116,7 +148,7 @@ Description=Wii Balance Board Daemon
 Type=simple
 ExecStart={python_path} -m wiibalance.daemon
 Restart=on-failure
-RestartSec=5
+RestartSec=3
 
 [Install]
 WantedBy=default.target
@@ -145,7 +177,7 @@ def teardown_daemon():
         subprocess.run(["systemctl", "--user", "stop", "wiibalanced.service"])
         subprocess.run(["systemctl", "--user", "disable", "wiibalanced.service"])
         subprocess.run(["systemctl", "--user", "daemon-reload"])
-        config = load_config()
+        config = read_config()
         config["daemon_enabled"] = False
         write_config(config)
         print(

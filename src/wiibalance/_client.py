@@ -47,4 +47,4 @@ class _DaemonBalanceBoard(BalanceBoard):
         self._send_command("LED_OFF")
 
     def disconnect(self) -> None:
-        pass  # client doesn't own the physical connection
+        self._send_command("DISCONNECT")

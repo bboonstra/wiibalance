@@ -2,8 +2,8 @@ import sys
 from collections import deque
 import re
 
-from .config import load_config
-from wiibalance.state import BoardState
+from .config import read_config
+from .state import BoardState
 
 _ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
@@ -138,7 +138,7 @@ class LiveDisplay:
         max_quad = max(state.weights.top_left, state.weights.top_right,
                        state.weights.bottom_left, state.weights.bottom_right, 1.0)
         btn = f"{C.BR_YELLOW}{C.BOLD}PRESSED{C.RESET}" if state.button else f"{C.GREY}up{C.RESET}     "
-        weight_unit = "lb" if load_config().get('units') == 'imperial' else 'kg'
+        weight_unit = "lb" if read_config().get('units') == 'imperial' else 'kg'
 
         body = [
             f"┌────────────────────────────────────────────┐\033[K",

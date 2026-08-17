@@ -4,10 +4,10 @@ import subprocess
 import sys
 import time
 from wiibalance import create_balance_board, PlatformNotSupportedError
-from .config import load_config
-from wiibalance._display import LiveDisplay
-from wiibalance.config import write_config
-from wiibalance.daemon import setup_daemon, teardown_daemon
+from .config import read_config
+from ._display import LiveDisplay
+from .config import write_config
+from .daemon import setup_daemon, teardown_daemon
 
 
 def main():
@@ -73,7 +73,7 @@ def main():
         try:
             board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
-            print(f"{state.weights.total:.2f}{"lb" if load_config().get('units') == 'imperial' else 'kg'}")
+            print(f"{state.weights.total:.2f}{"lb" if read_config().get('units') == 'imperial' else 'kg'}")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -81,7 +81,7 @@ def main():
         try:
             board = create_balance_board(address=args.address, use_daemon=args.daemon)
             state = board.read_state()
-            print(f"Center of Pressure: {state.weights.center_of_pressure}")
+            print(f"{state.weights.center_of_pressure}")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -101,16 +101,16 @@ def main():
             board = create_balance_board(address=args.address, use_daemon=args.daemon)
             if args.on:
                 board.led_on()
-                print("LED turned on.")
+                print("LED turned on")
                 return
             elif args.off:
                 board.led_off()
-                print("LED turned off.")
+                print("LED turned off")
                 return
             else:
                 board.toggle_led()
-                print(f"LED is now {board.read_state().led and 'on' or 'off'}")
-            print("LED toggled.")
+                print(f"LED turned {board.read_state().led and 'on' or 'off'}")
+                return
         except Exception as e:
             print(f"Error: {e}")
 
@@ -139,7 +139,7 @@ def main():
                         "battery": state.battery_percent,
                         "battery_bars": state.battery_bars,
                         "led": state.led,
-                        "unit": "lb" if load_config().get('units') == 'imperial' else 'kg',
+                        "unit": "lb" if read_config().get('units') == 'imperial' else 'kg',
                         "timestamp": time.time(),
                     }
                     print(json.dumps(data))
@@ -155,14 +155,14 @@ def main():
 
     elif args.command == "config":
         try:
-            config = load_config()
+            config = read_config()
             if args.action == "set":
                 if not args.key:
                     print("Error: a key is required for set action")
                     return
                 config[args.key] = args.value
                 write_config(config)
-                print(f"Updated config:\n{json.dumps(load_config(), indent=4)}")
+                print(f"Updated config:\n{json.dumps(read_config(), indent=4)}")
 
             elif args.action == "get":
                 if not args.key:
@@ -176,7 +176,7 @@ def main():
                 else:
                     config.clear()
                 write_config(config)
-                print(f"Updated config:\n{json.dumps(load_config(), indent=4)}")
+                print(f"Updated config:\n{json.dumps(read_config(), indent=4)}")
 
         except Exception as e:
             print(f"Error: {e}")

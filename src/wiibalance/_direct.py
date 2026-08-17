@@ -3,7 +3,7 @@ import subprocess
 import threading
 
 from .config import (
-    load_config,
+    read_config,
     COMMAND_CALIBRATION,
     COMMAND_LED,
     COMMAND_REPORTING,
@@ -29,7 +29,9 @@ class DirectBalanceBoard(BalanceBoard):
         self.address = address or self.discover()
         self.timeout = timeout
         if self.address is None:
-            raise BoardNotFoundError(f"{DEVICE_NAME} not found")
+            raise BoardNotFoundError(
+                f"A board ({DEVICE_NAME}) was not found paired to your device. "
+                f"Please reference the documentation: https://github.com/bboonstra/wiibalance#initial-setup")
 
         self.send_sock = None
         self.recv_sock = None
@@ -279,7 +281,7 @@ class DirectBalanceBoard(BalanceBoard):
 
         values = [self._parse_sample(raw[position], position) for position in range(4)]
 
-        if load_config().get('units') == 'imperial':
+        if read_config().get('units') == 'imperial':
             values = [v * 2.20462 for v in values]
 
         w = Weights(

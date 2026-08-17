@@ -8,7 +8,7 @@ SOCKET_PATH = "/tmp/wiibalance.sock"
 
 DEFAULT_CONFIG = {"daemon_enabled": False, "address": None, "units": "metric"}
 
-def load_config() -> dict:
+def read_config() -> dict:
     if CONFIG_PATH.exists():
         try:
             conf = json.loads(CONFIG_PATH.read_text())
