@@ -25,7 +25,7 @@ def main():
 
     # Daemon commands (inherit shared_parser so -a/--address and daemon flags work)
     daemon_parser = subparsers.add_parser("daemon", parents=[shared_parser], help="Manage the background daemon")
-    daemon_parser.add_argument("action", choices=["setup", "status", "start", "stop", "restart", "remove"])
+    daemon_parser.add_argument("action", choices=["setup", "status", "start", "stop", "restart", "remove", "pair"])
 
     # Interaction commands (inherits shared_parser so -a/--address and daemon flags work here too)
     subparsers.add_parser("weight", parents=[shared_parser], help="Read current total weight")
@@ -58,6 +58,8 @@ def main():
     if args.command == "daemon":
         if args.action == "setup":
             setup_daemon(address=args.address)
+        elif args.action == "pair":
+            create_balance_board(use_daemon=True)
         elif args.action == "status":
             subprocess.run(["systemctl", "--user", "status", "wiibalanced.service"])
         elif args.action == "start":
