@@ -42,12 +42,12 @@ background process that stays connected to the board, and your BalanceBoard will
 
 The `Weights` object, returned in `read_state` and by `weights`, contains the following attributes:
 
-- `total`
-- `top_left`
-- `top_right`
-- `bottom_left`
-- `bottom_right`
-- `center_of_pressure`
+- `total`: The total weight on the board
+- `top_left`: Weight on this foot of the board
+- `top_right`: Weight on this foot of the board
+- `bottom_left`: Weight on this foot of the board
+- `bottom_right`: Weight on this foot of the board
+- `center_of_pressure`: [Position](https://github.com/bboonstra/wiibalance/blob/main/docs/cli.md#center-of-pressure) of weight on board
 
 There are also `raw` variants of each directional weight, which are raw sensor values and NOT weight values.
 
@@ -56,7 +56,8 @@ There are also `raw` variants of each directional weight, which are raw sensor v
 If you'd like something to happen when the button is pressed, you must have a DirectBalanceBoard object. You can create
 this either by calling `create_balance_board` with `use_daemon=false` as an argument and then casting it to
 DirectBalanceBoard, or by instantiating a
-`DirectBalanceBoard` object directly.
+`DirectBalanceBoard` object directly. A DirectBalanceBoard CANNOT be used while the daemon is managing the board 
+connection.
 
 Once you have a DirectBalanceBoard object, you can register a callback function by adding it to the `on_button_press`,
 `on_button_release`, or `on_button_change` dicts. The callback function will be called with the button state as an
@@ -80,7 +81,7 @@ BalanceBoard workers run in their own threads, so the callbacks will run asynchr
 
 ## Config
 
-It's recommended to use the CLI to configure your board.
+It's recommended to use the [CLI](https://github.com/bboonstra/wiibalance/blob/main/docs/cli.md#config) to configure your board.
 
 If this isn't possible, you can use the `read_config` and `write_config` functions. You can also edit the
 `~/.config/wiibalance/config.json` file.
