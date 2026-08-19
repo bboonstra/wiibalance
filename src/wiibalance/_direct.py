@@ -373,7 +373,7 @@ class DirectBalanceBoard(BalanceBoard):
             reference_temperature=self.reference_temperature,
         )
 
-        if board_state.battery_bars == 0 and board_state.weights.total <= 0.01:
+        if board_state.battery_bars == 0 and board_state.weights.total == 0.0:
             raise CriticallyLowBatteryError(
                 "Your Wii Balance Board is critically low on battery and cannot provide valid weight data. Please replace the batteries.")
 
